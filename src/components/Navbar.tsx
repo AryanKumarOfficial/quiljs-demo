@@ -2,15 +2,25 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 
 export default function Navbar() {
     const pathname = usePathname();
+    const router = useRouter();
+    const { data: session, status } = useSession();
+    const isAuthenticated = status === 'authenticated';
 
     const navItems = [
         { label: "Home", href: "/" },
         { label: "Response", href: "/response" },
     ];
+
+    const handleSignOut = async () => {
+        await signOut({ redirect: false });
+        router.push('/login');
+        router.refresh();
+    };
 
     return (
         <nav className="flex flex-wrap gap-4 items-center justify-between bg-gray-800 p-4 rounded-lg shadow-md">
@@ -48,22 +58,55 @@ export default function Navbar() {
                     <span className="text-blue-500">E</span>ditor
                 </h1>
             </div>
-            <ul className="flex flex-wrap gap-6 m-0 p-0 list-none">
-                {navItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <li key={item.href}>
-                            <Link
-                                href={item.href}
-                                className={`px-2 py-1 rounded transition duration-300 ease-in-out font-semibold text-white hover:text-blue-500 hover:bg-white/10 ${isActive ? "text-blue-500 bg-white/10" : ""
-                                    }`}
+            <div className="flex items-center gap-4">
+                <ul className="flex flex-wrap gap-6 m-0 p-0 list-none">
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                            <li key={item.href}>
+                                <Link
+                                    href={item.href}
+                                    className={`px-2 py-1 rounded transition duration-300 ease-in-out font-semibold text-white hover:text-blue-500 hover:bg-white/10 ${isActive ? "text-blue-500 bg-white/10" : ""
+                                        }`}
+                                >
+                                    {item.label}
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
+                
+                <div className="flex items-center gap-2">
+                    {isAuthenticated ? (
+                        <div className="flex items-center gap-4">
+                            <div className="text-white text-sm">
+                                {session?.user?.name || session?.user?.email}
+                            </div>
+                            <button
+                                onClick={handleSignOut}
+                                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded transition"
                             >
-                                {item.label}
+                                Logout
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <Link
+                                href="/login"
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
+                            >
+                                Login
                             </Link>
-                        </li>
-                    );
-                })}
-            </ul>
+                            <Link
+                                href="/register"
+                                className="px-4 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded transition"
+                            >
+                                Register
+                            </Link>
+                        </div>
+                    )}
+                </div>
+            </div>
         </nav>
     );
 }

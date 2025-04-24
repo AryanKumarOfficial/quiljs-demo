@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import dynamic from 'next/dynamic';
+import { useSession } from 'next-auth/react';
 
 // Dynamically import ReactMarkdown to avoid SSR issues
 const ReactMarkdown = dynamic(() => import('react-markdown'), { 
@@ -26,6 +27,7 @@ export default function ResponsesPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const { data: session } = useSession();
 
   // Fetch responses from the API
   useEffect(() => {
@@ -111,9 +113,9 @@ export default function ResponsesPage() {
   return (
     <section className="max-w-7xl mx-auto p-6 md:p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold">Saved Responses</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Your Responses</h1>
         <Link 
-          href="/" 
+          href="/response/new" 
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -145,7 +147,7 @@ export default function ResponsesPage() {
           <h2 className="text-xl font-semibold text-gray-700 mb-2">No responses yet</h2>
           <p className="text-gray-600 mb-4">Create your first response to see it here</p>
           <Link 
-            href="/"
+            href="/response/new"
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -198,23 +200,31 @@ export default function ResponsesPage() {
                 >
                   View Details
                 </Link>
-                <button
-                  onClick={() => handleDelete(response.id)}
-                  disabled={deleteLoading === response.id}
-                  className="text-sm text-red-600 hover:underline font-medium flex items-center"
-                >
-                  {deleteLoading === response.id ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Deleting...
-                    </span>
-                  ) : (
-                    'Delete'
-                  )}
-                </button>
+                <div className="flex gap-3">
+                  <Link
+                    href={`/response/edit/${response.id}`}
+                    className="text-sm text-green-600 hover:underline font-medium"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(response.id)}
+                    disabled={deleteLoading === response.id}
+                    className="text-sm text-red-600 hover:underline font-medium flex items-center"
+                  >
+                    {deleteLoading === response.id ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Deleting...
+                      </span>
+                    ) : (
+                      'Delete'
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           ))}

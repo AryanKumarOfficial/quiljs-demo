@@ -2,9 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Response from '@/models/Response';
 import mongoose from 'mongoose';
+import { getCurrentUser } from '@/lib/get-session';
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Get the current authenticated user
+    const user = await getCurrentUser();
+    
+    // If no authenticated user, return unauthorized
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
     
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -15,7 +27,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     }
 
     await connectToDatabase();
-    const response = await Response.findById(id);
+    // Find response that belongs to the current user
+    const response = await Response.findOne({ _id: id, userId: user.id });
     
     if (!response) {
       return NextResponse.json(
@@ -39,6 +52,17 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
 
 export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Get the current authenticated user
+    const user = await getCurrentUser();
+    
+    // If no authenticated user, return unauthorized
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
     
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -49,11 +73,13 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
     }
 
     await connectToDatabase();
-    const response = await Response.findByIdAndDelete(id);
+    
+    // Delete only if it belongs to the current user
+    const response = await Response.findOneAndDelete({ _id: id, userId: user.id });
     
     if (!response) {
       return NextResponse.json(
-        { success: false, error: 'Response not found' },
+        { success: false, error: 'Response not found or you do not have permission' },
         { status: 404 }
       );
     }
@@ -73,6 +99,17 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Get the current authenticated user
+    const user = await getCurrentUser();
+    
+    // If no authenticated user, return unauthorized
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
     const body = await request.json();
     const { title, tag, description, editorType } = body;
@@ -94,15 +131,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     await connectToDatabase();
     
-    const response = await Response.findByIdAndUpdate(
-      id,
+    // Update only if it belongs to the current user
+    const response = await Response.findOneAndUpdate(
+      { _id: id, userId: user.id },
       { title, tag, description, editorType },
       { new: true, runValidators: true }
     );
     
     if (!response) {
       return NextResponse.json(
-        { success: false, error: 'Response not found' },
+        { success: false, error: 'Response not found or you do not have permission' },
         { status: 404 }
       );
     }

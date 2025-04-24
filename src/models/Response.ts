@@ -5,6 +5,7 @@ export interface IResponse {
   tag: string;
   description: string;
   editorType: 'advanced' | 'markdown';
+  userId: mongoose.Types.ObjectId | string; // Add user reference
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -29,6 +30,11 @@ const responseSchema = new Schema<IResponse>({
     type: String, 
     enum: ['advanced', 'markdown'],
     default: 'advanced'
+  },
+  userId: {
+    type: Schema.Types.ObjectId, 
+    ref: 'User',
+    required: [true, 'User ID is required']
   }
 }, {
   timestamps: true,
