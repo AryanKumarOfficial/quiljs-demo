@@ -3,9 +3,11 @@
 import React, { useState, FormEvent, ChangeEvent, useTransition } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from 'next/link';
 import AdvancedEditor from "@/components/BareEditor";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import toast, { Toaster } from "react-hot-toast";
+import { motion } from "framer-motion";
 
 interface FormData {
   title: string;
@@ -157,143 +159,207 @@ export default function NewResponsePage() {
   };
 
   return (
-    <section className="max-w-3xl mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">Create New Response</h1>
-      
-      {/* Editor Switch UI */}
-      <div className="relative w-fit mx-auto mb-8 bg-gray-100 p-1 rounded-lg shadow-sm flex">
-        <div 
-          className={`absolute transition-all duration-200 top-1 bottom-1 ${editorType === "advanced" ? "left-1 right-[calc(50%+1px)]" : "left-[calc(50%+1px)] right-1"} bg-white rounded-md shadow-sm z-0`}
-        ></div>
-        <button
-          type="button"
-          onClick={() => { setEditorType("advanced"); setEditorValue(""); }}
-          className={`relative z-10 px-5 py-2 rounded-md font-medium text-sm transition-colors duration-200 flex items-center gap-2 ${
-            editorType === "advanced"
-              ? "text-blue-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
+    <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+      <div className="mb-6 flex items-center">
+        <Link
+            href="/response"
+            className="text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-2 group font-medium"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
-          </svg>
-          Rich Text
-        </button>
-        <button
-          type="button"
-          onClick={() => { setEditorType("markdown"); setEditorValue(""); }}
-          className={`relative z-10 px-5 py-2 rounded-md font-medium text-sm transition-colors duration-200 flex items-center gap-2 ${
-            editorType === "markdown"
-              ? "text-blue-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V19.5a2.25 2.25 0 0 0 2.25 2.25h.75m0-3.75h3.75" />
-          </svg>
-          Markdown
-        </button>
+            <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5"></path>
+                <path d="M12 19l-7-7 7-7"></path>
+            </svg>
+            Back to All Responses
+        </Link>
       </div>
       
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white bg-opacity-80 backdrop-blur-md border border-white border-opacity-40 rounded-xl shadow-lg p-8 flex flex-col gap-6 transition-shadow hover:shadow-xl"
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100"
       >
-        <div className="flex flex-col gap-2">
-          <label htmlFor="title" className="font-medium flex items-center gap-1">
-            Title
-            <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="title"
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            className={`w-full p-3 text-base border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.title ? "border-red-500" : "border-gray-300"
-            }`}
-            aria-invalid={!!errors.title}
-            aria-describedby={errors.title ? "title-error" : undefined}
-          />
-          {errors.title && (
-            <p id="title-error" className="text-red-500 text-sm mt-1">
-              {errors.title}
-            </p>
-          )}
+        {/* Header */}
+        <div className="p-6 sm:p-8 border-b border-gray-100">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+            Create New Response
+          </h1>
+          <p className="text-slate-500 mt-2">
+            Fill out the form below to create a new response using your preferred editor.
+          </p>
         </div>
-        
-        <div className="flex flex-col gap-2">
-          <label htmlFor="tag" className="font-medium flex items-center gap-1">
-            Tag
-            <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="tag"
-            name="tag"
-            value={form.tag}
-            onChange={handleChange}
-            className={`w-full p-3 text-base border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.tag ? "border-red-500" : "border-gray-300"
-            }`}
-            aria-invalid={!!errors.tag}
-            aria-describedby={errors.tag ? "tag-error" : undefined}
-          />
-          {errors.tag && (
-            <p id="tag-error" className="text-red-500 text-sm mt-1">
-              {errors.tag}
-            </p>
-          )}
-        </div>
-        
-        <div className="flex flex-col gap-2">
-          <label htmlFor="editor" className="font-medium flex items-center gap-1">
-            Description
-            <span className="text-red-500">*</span>
-          </label>
-          <div 
-            className={`editor-wrapper w-full mb-4 border rounded-md overflow-hidden ${
-              errors.content ? "border-red-500" : "border-gray-300"
-            }`}
-          >
-            {editorType === "advanced" ? (
-              <AdvancedEditor value={editorValue} onChange={handleEditorChange} />
-            ) : (
-              <MarkdownEditor value={editorValue} onChange={handleEditorChange} />
-            )}
+
+        {/* Editor Switch UI */}
+        <div className="px-6 sm:px-8 py-6 border-b border-gray-100 bg-slate-50">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Choose Editor Type</label>
+          <div className="bg-white p-1 rounded-lg shadow-sm border border-gray-200 flex w-fit">
+            <button
+              type="button"
+              onClick={() => { setEditorType("advanced"); setEditorValue(""); }}
+              className={`relative z-10 px-4 py-2 rounded-md font-medium text-sm transition-colors duration-200 flex items-center gap-2 ${
+                editorType === "advanced"
+                  ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              Rich Text
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEditorType("markdown"); setEditorValue(""); }}
+              className={`relative z-10 px-4 py-2 rounded-md font-medium text-sm transition-colors duration-200 flex items-center gap-2 ${
+                editorType === "markdown"
+                  ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 15L2.8 19.2a1 1 0 0 0 -.3.7V21a1 1 0 0 0 1 1h1.1a1 1 0 0 0 .7-.3L9.5 18"></path>
+                <path d="M9 9h6"></path>
+                <path d="M9 13h6"></path>
+                <path d="M11 17h2"></path>
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              </svg>
+              Markdown
+            </button>
           </div>
-          {errors.content && (
-            <p id="content-error" className="text-red-500 text-sm mt-1">
-              {errors.content}
-            </p>
-          )}
         </div>
+      
+        {/* Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 sm:p-8"
+        >
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="title"
+                name="title"
+                value={form.title}
+                onChange={handleChange}
+                placeholder="Enter a title for your response"
+                className={`w-full px-4 py-2.5 text-base bg-white border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                  errors.title ? "border-red-300 bg-red-50" : "border-gray-300"
+                }`}
+                aria-invalid={!!errors.title}
+                aria-describedby={errors.title ? "title-error" : undefined}
+              />
+              {errors.title && (
+                <p id="title-error" className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  {errors.title}
+                </p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="tag" className="block text-sm font-medium text-gray-700 mb-1">
+                Tag <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="tag"
+                name="tag"
+                value={form.tag}
+                onChange={handleChange}
+                placeholder="e.g. work, personal, idea"
+                className={`w-full px-4 py-2.5 text-base bg-white border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                  errors.tag ? "border-red-300 bg-red-50" : "border-gray-300"
+                }`}
+                aria-invalid={!!errors.tag}
+                aria-describedby={errors.tag ? "tag-error" : undefined}
+              />
+              {errors.tag && (
+                <p id="tag-error" className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  {errors.tag}
+                </p>
+              )}
+              <p className="text-xs text-gray-500 mt-1.5">
+                Tags help you categorize and find your responses easily.
+              </p>
+            </div>
+            
+            <div>
+              <label htmlFor="editor" className="block text-sm font-medium text-gray-700 mb-1">
+                Description <span className="text-red-500">*</span>
+              </label>
+              <div 
+                className={`editor-wrapper w-full border rounded-lg overflow-hidden shadow-sm transition-colors ${
+                  errors.content ? "border-red-300" : "border-gray-300"
+                }`}
+              >
+                {editorType === "advanced" ? (
+                  <AdvancedEditor value={editorValue} onChange={handleEditorChange} />
+                ) : (
+                  <MarkdownEditor value={editorValue} onChange={handleEditorChange} />
+                )}
+              </div>
+              {errors.content && (
+                <p id="content-error" className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  {errors.content}
+                </p>
+              )}
+            </div>
+          </div>
         
-        <div className="flex justify-between mt-4">
-          <button
-            type="button"
-            onClick={() => router.push('/response')}
-            className="px-6 py-3 bg-gray-200 text-gray-800 rounded-md font-semibold transition hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          
-          <button
-            type="submit"
-            disabled={loading || isPending}
-            className="px-6 py-3 bg-blue-600 text-white rounded-md font-semibold transition hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-          >
-            {(loading || isPending) ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </>
-            ) : "Save Response"}
-          </button>
-        </div>
-      </form>
+          <div className="flex flex-wrap-reverse sm:flex-nowrap gap-3 justify-between mt-8 sm:mt-10">
+            <Link 
+              href="/response"
+              className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto font-medium text-sm"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5"></path>
+                <path d="M12 19l-7-7 7-7"></path>
+              </svg>
+              Cancel
+            </Link>
+            
+            <button
+              type="submit"
+              disabled={loading || isPending}
+              className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 justify-center w-full sm:w-auto disabled:opacity-50 disabled:pointer-events-none font-medium text-sm"
+            >
+              {(loading || isPending) ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving Response...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  Save Response
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </motion.div>
       
       {/* Toast container for notifications */}
       <Toaster />
