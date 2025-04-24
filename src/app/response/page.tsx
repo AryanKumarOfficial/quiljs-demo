@@ -1,78 +1,96 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 
 const ReactMarkdown = dynamic(() => import("react-markdown"), {
   ssr: false,
-  loading: () => <p>Loading markdown...</p>,
 });
 
-interface ResponseItem {
+interface Response {
   title: string;
   tag: string;
   description: string;
   editorType: "advanced" | "markdown";
+  timestamp?: number;
 }
 
-export default function Responses() {
-  const [responses, setResponses] = useState<ResponseItem[]>([]);
+export default function ResponsePage() {
+  const [responses, setResponses] = useState<Response[]>([]);
 
   useEffect(() => {
-    const stored = localStorage.getItem("responses");
-    if (stored) {
-      setResponses(JSON.parse(stored));
+    try {
+      const storedResponses = localStorage.getItem("responses");
+      if (storedResponses) {
+        setResponses(JSON.parse(storedResponses));
+      }
+    } catch (error) {
+      console.error("Error fetching responses from localStorage", error);
     }
   }, []);
 
   const handleDelete = (index: number) => {
-    const updated = responses.filter((_, i) => i !== index);
-    setResponses(updated);
-    localStorage.setItem("responses", JSON.stringify(updated));
+    try {
+      const updated = responses.filter((_, i) => i !== index);
+      localStorage.setItem("responses", JSON.stringify(updated));
+      setResponses(updated);
+    } catch (error) {
+      console.error("Error deleting response", error);
+    }
   };
-
-  const clearAll = () => {
-    localStorage.removeItem("responses");
-    setResponses([]);
-  };
-
-  const renderContent = (response: ResponseItem) =>
-    response.editorType === "markdown" ? (
-      <div className="markdown-content prose prose-sm max-w-full">
-        <ReactMarkdown>{response.description}</ReactMarkdown>
-      </div>
-    ) : (
-      <div
-        className="rich-text-content"
-        dangerouslySetInnerHTML={{ __html: response.description }}
-      />
-    );
 
   return (
-    <section className="max-w-2xl mx-auto p-8">
-      <h2 className="text-2xl font-bold mb-6 text-center">Responses</h2>
-
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Responses</h1>
+        <Link 
+          href="/"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium transition hover:bg-blue-700"
+        >
+          Back to Form
+        </Link>
+      </div>
+      
       {responses.length === 0 ? (
-        <p className="text-center text-gray-500">No responses yet.</p>
+        <div className="bg-white bg-opacity-80 backdrop-blur-md rounded-xl shadow p-8 text-center">
+          <p className="text-gray-600">No responses yet. Add your first response from the form.</p>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-6">
-          {responses.map((resp, idx) => (
-            <li key={idx}>
-              <div className="bg-white bg-opacity-80 backdrop-blur-md border border-white/40 rounded-xl shadow-lg p-6 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold">{resp.title}</h3>
-                  <span className="inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded text-sm">
-                    {resp.tag}
-                  </span>
-                </div>
-                <span className="inline-block text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                  {resp.editorType === "markdown" ? "Markdown" : "Rich Text"}
+        <ul className="space-y-6">
+          {responses.map((response, index) => (
+            <li
+              key={index}
+              className="bg-white bg-opacity-80 backdrop-blur-md border border-white border-opacity-40 rounded-xl shadow p-6 transition-shadow hover:shadow-lg"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold">{response.title}</h2>
+                <span className="inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                  {response.tag}
                 </span>
-                <div className="mt-2">{renderContent(resp)}</div>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-2">
+                  Editor type: {response.editorType === "advanced" ? "Rich Text" : "Markdown"}
+                </p>
+                
+                {response.editorType === "advanced" ? (
+                  <div 
+                    className="prose max-w-none p-4 bg-gray-50 rounded-md"
+                    dangerouslySetInnerHTML={{ __html: response.description }}
+                  />
+                ) : (
+                  <div className="prose max-w-none p-4 bg-gray-50 rounded-md">
+                    <ReactMarkdown>{response.description}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end">
                 <button
-                  onClick={() => handleDelete(idx)}
-                  className="self-end px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition"
+                  onClick={() => handleDelete(index)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md font-medium transition hover:bg-red-700"
                 >
                   Delete
                 </button>
@@ -81,19 +99,6 @@ export default function Responses() {
           ))}
         </ul>
       )}
-
-      <div className="mt-8 flex justify-center gap-4">
-        <button
-          onClick={clearAll}
-          className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition"
-        >
-          Clear All
-        </button>
-        <Link href="/"
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition">
-          ← Back to Home
-        </Link>
-      </div>
-    </section>
+    </div>
   );
 }
