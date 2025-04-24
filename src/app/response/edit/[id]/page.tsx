@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, FormEvent, ChangeEvent, useTransition } from "react";
+import React, { useState, useEffect, FormEvent, ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 import AdvancedEditor from "@/components/BareEditor";
 import MarkdownEditor from "@/components/MarkdownEditor";
-import toast, { Toaster } from "react-hot-toast";
 
 interface FormData {
   title: string;
@@ -15,16 +17,50 @@ type EditorType = "advanced" | "markdown";
 interface FormErrors {
   title?: string;
   tag?: string;
-  content?: string;
+  description?: string;
 }
 
-export default function Home() {
+export default function EditResponsePage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const { id } = params;
+
   const [editorValue, setEditorValue] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [isPending, startTransition] = useTransition();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saveLoading, setSaveLoading] = useState<boolean>(false);
   const [editorType, setEditorType] = useState<EditorType>("advanced");
   const [form, setForm] = useState<FormData>({ title: "", tag: "" });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Fetch response data to edit
+  useEffect(() => {
+    const fetchResponse = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/responses/${id}`);
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to fetch response");
+        }
+
+        const responseData = result.data;
+        setForm({
+          title: responseData.title,
+          tag: responseData.tag,
+        });
+        setEditorValue(responseData.description);
+        setEditorType(responseData.editorType);
+      } catch (error) {
+        console.error("Error fetching response:", error);
+        setFetchError(error instanceof Error ? error.message : "Failed to load response");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResponse();
+  }, [id]);
 
   // Form validation
   const validateForm = () => {
@@ -42,7 +78,7 @@ export default function Home() {
     }
 
     if (!editorValue.trim()) {
-      newErrors.content = "Description is required";
+      newErrors.description = "Description is required";
       isValid = false;
     }
 
@@ -52,33 +88,33 @@ export default function Home() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error("Please fill in all required fields", {
         duration: 4000,
-        position: 'top-center',
+        position: "top-center",
         style: {
-          background: '#FEE2E2',
-          color: '#B91C1C',
-          border: '1px solid #F87171',
-          padding: '16px',
-          fontWeight: '500',
+          background: "#FEE2E2",
+          color: "#B91C1C",
+          border: "1px solid #F87171",
+          padding: "16px",
+          fontWeight: "500",
         },
         iconTheme: {
-          primary: '#DC2626',
-          secondary: '#FEE2E2',
-        }
+          primary: "#DC2626",
+          secondary: "#FEE2E2",
+        },
       });
       return;
     }
-    
-    try {
-      setLoading(true);
 
-      const response = await fetch('/api/responses', {
-        method: 'POST',
+    try {
+      setSaveLoading(true);
+      
+      const response = await fetch(`/api/responses/${id}`, {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           title: form.title,
@@ -89,85 +125,123 @@ export default function Home() {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(result.error || 'Something went wrong');
+        throw new Error(result.error || "Something went wrong");
       }
-      
-      // Show success notification
-      toast.success("Your response has been saved successfully!", {
-        duration: 4000,
-        position: 'top-center',
+
+      toast.success("Your response has been updated successfully!", {
+        duration: 3000,
+        position: "top-center",
         style: {
-          background: '#DCFCE7',
-          color: '#166534',
-          border: '1px solid #86EFAC',
-          padding: '16px',
-          fontWeight: '500',
+          background: "#DCFCE7",
+          color: "#166534",
+          border: "1px solid #86EFAC",
+          padding: "16px",
+          fontWeight: "500",
         },
         iconTheme: {
-          primary: '#22C55E',
-          secondary: '#DCFCE7',
-        }
+          primary: "#22C55E",
+          secondary: "#DCFCE7",
+        },
       });
+
+      // Navigate back to the response details page
+      setTimeout(() => {
+        router.push(`/response/${id}`);
+      }, 1500);
       
-      // Reset form using React 19's useTransition for better UX
-      startTransition(() => {
-        setForm({ title: "", tag: "" });
-        setEditorValue("");
-        setErrors({});
-      });
     } catch (error) {
-      console.error("Error saving response:", error);
+      console.error("Error updating response:", error);
       toast.error(error instanceof Error ? error.message : "Something went wrong. Please try again.", {
         duration: 4000,
-        position: 'top-center',
+        position: "top-center",
         style: {
-          background: '#FEE2E2',
-          color: '#B91C1C',
-          border: '1px solid #F87171',
-          padding: '16px',
-          fontWeight: '500',
+          background: "#FEE2E2",
+          color: "#B91C1C",
+          border: "1px solid #F87171",
+          padding: "16px",
+          fontWeight: "500",
         },
         iconTheme: {
-          primary: '#DC2626',
-          secondary: '#FEE2E2',
-        }
+          primary: "#DC2626",
+          secondary: "#FEE2E2",
+        },
       });
     } finally {
-      setLoading(false);
+      setSaveLoading(false);
     }
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    
+    setForm((prev) => ({ ...prev, [name]: value }));
+
     // Clear error for this field when user types
     if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
   const handleEditorChange = (value: string) => {
     setEditorValue(value);
-    if (errors.content) {
-      setErrors(prev => ({ ...prev, content: undefined }));
+    if (errors.description) {
+      setErrors((prev) => ({ ...prev, description: undefined }));
     }
   };
 
+  if (loading) {
+    return (
+      <div className="max-w-3xl mx-auto p-8 flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="max-w-3xl mx-auto p-8">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6">
+          <h3 className="font-medium">Error</h3>
+          <p>{fetchError}</p>
+        </div>
+        <Link
+          href="/response"
+          className="text-blue-600 hover:text-blue-800 transition flex items-center gap-1"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          Back to Responses
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <section className="max-w-3xl mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">Simple Form with Rich Text Editors</h1>
-      
-      {/* Updated Editor Switch UI */}
-      <div className="relative w-fit mx-auto mb-8 bg-gray-100 p-1 rounded-lg shadow-sm flex">
+      <div className="mb-6 flex items-center gap-4">
+        <Link
+          href={`/response/${id}`}
+          className="text-blue-600 hover:text-blue-800 transition flex items-center gap-1"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          Back to Response
+        </Link>
+      </div>
+
+      <h1 className="text-3xl font-bold mb-8">Edit Response</h1>
+
+      {/* Editor Type Selection */}
+      <div className="relative w-fit mb-8 bg-gray-100 p-1 rounded-lg shadow-sm flex">
         <div 
           className={`absolute transition-all duration-200 top-1 bottom-1 ${editorType === "advanced" ? "left-1 right-[calc(50%+1px)]" : "left-[calc(50%+1px)] right-1"} bg-white rounded-md shadow-sm z-0`}
         ></div>
         <button
           type="button"
-          onClick={() => { setEditorType("advanced"); setEditorValue(""); }}
+          onClick={() => setEditorType("advanced")}
           className={`relative z-10 px-5 py-2 rounded-md font-medium text-sm transition-colors duration-200 flex items-center gap-2 ${
             editorType === "advanced"
               ? "text-blue-600"
@@ -181,7 +255,7 @@ export default function Home() {
         </button>
         <button
           type="button"
-          onClick={() => { setEditorType("markdown"); setEditorValue(""); }}
+          onClick={() => setEditorType("markdown")}
           className={`relative z-10 px-5 py-2 rounded-md font-medium text-sm transition-colors duration-200 flex items-center gap-2 ${
             editorType === "markdown"
               ? "text-blue-600"
@@ -194,7 +268,7 @@ export default function Home() {
           Markdown
         </button>
       </div>
-      
+
       <form
         onSubmit={handleSubmit}
         className="bg-white bg-opacity-80 backdrop-blur-md border border-white border-opacity-40 rounded-xl shadow-lg p-8 flex flex-col gap-6 transition-shadow hover:shadow-xl"
@@ -221,7 +295,7 @@ export default function Home() {
             </p>
           )}
         </div>
-        
+
         <div className="flex flex-col gap-2">
           <label htmlFor="tag" className="font-medium flex items-center gap-1">
             Tag
@@ -244,15 +318,15 @@ export default function Home() {
             </p>
           )}
         </div>
-        
+
         <div className="flex flex-col gap-2">
           <label htmlFor="editor" className="font-medium flex items-center gap-1">
             Description
             <span className="text-red-500">*</span>
           </label>
-          <div 
+          <div
             className={`editor-wrapper w-full mb-4 border rounded-md overflow-hidden ${
-              errors.content ? "border-red-500" : "border-gray-300"
+              errors.description ? "border-red-500" : "border-gray-300"
             }`}
           >
             {editorType === "advanced" ? (
@@ -261,31 +335,56 @@ export default function Home() {
               <MarkdownEditor value={editorValue} onChange={handleEditorChange} />
             )}
           </div>
-          {errors.content && (
+          {errors.description && (
             <p id="content-error" className="text-red-500 text-sm mt-1">
-              {errors.content}
+              {errors.description}
             </p>
           )}
         </div>
-        
-        <button
-          type="submit"
-          disabled={loading || isPending}
-          className="px-6 py-3 bg-blue-600 text-white rounded-md font-semibold transition hover:bg-blue-700 disabled:opacity-50 mx-auto flex items-center gap-2"
-        >
-          {(loading || isPending) ? (
-            <>
-              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Saving...
-            </>
-          ) : "Save Response"}
-        </button>
+
+        <div className="flex justify-end gap-3">
+          <Link
+            href={`/response/${id}`}
+            className="px-6 py-3 bg-gray-200 text-gray-800 rounded-md font-semibold transition hover:bg-gray-300 flex items-center gap-2"
+          >
+            Cancel
+          </Link>
+          <button
+            type="submit"
+            disabled={saveLoading}
+            className="px-6 py-3 bg-blue-600 text-white rounded-md font-semibold transition hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+          >
+            {saveLoading ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </button>
+        </div>
       </form>
-      
-      {/* Toast container for notifications */}
+
       <Toaster />
     </section>
   );
