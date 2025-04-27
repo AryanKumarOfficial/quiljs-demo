@@ -9,19 +9,28 @@ interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  readOnly?: boolean;
 }
 
 export default function MarkdownEditor({
   value,
   onChange,
-  placeholder = "Start typing in markdown..."
+  placeholder = "Start typing in markdown...",
+  readOnly = false
 }: MarkdownEditorProps) {
-  const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
+  const [selectedTab, setSelectedTab] = useState<"write" | "preview">(readOnly ? "preview" : "write");
 
   const generateMarkdownPreview = useCallback(
     (markdown: string) => Promise.resolve(<ReactMarkdown>{markdown}</ReactMarkdown>),
     []
   );
+
+  // Force preview mode when readOnly is true
+  React.useEffect(() => {
+    if (readOnly && selectedTab === "write") {
+      setSelectedTab("preview");
+    }
+  }, [readOnly]);
 
   return (
     <div className="markdown-editor-container">
@@ -29,13 +38,14 @@ export default function MarkdownEditor({
         value={value}
         onChange={onChange}
         selectedTab={selectedTab}
-        onTabChange={setSelectedTab}
+        onTabChange={readOnly ? undefined : setSelectedTab}
         generateMarkdownPreview={generateMarkdownPreview}
         minEditorHeight={250}
         heightUnits="px"
+        readOnly={readOnly}
         classes={{
-          reactMde: "border rounded-md overflow-hidden",
-          toolbar: "border-b bg-gray-50",
+          reactMde: `border rounded-md overflow-hidden ${readOnly ? "read-only" : ""}`,
+          toolbar: `border-b bg-gray-50 ${readOnly ? "hidden" : ""}`,
           preview: "p-4 bg-white"
         }}
       />
@@ -105,6 +115,10 @@ export default function MarkdownEditor({
         .mde-preview .mde-preview-content pre code {
           background-color: transparent;
           padding: 0;
+        }
+        .read-only .mde-textarea-wrapper textarea.mde-text {
+          background-color: #f9fafb;
+          cursor: not-allowed;
         }
       `}</style>
     </div>

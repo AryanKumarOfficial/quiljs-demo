@@ -4,6 +4,8 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AuthProvider from "@/components/AuthProvider";
+import { Toaster } from "react-hot-toast";
+import { NotePreviewDialog } from "@/components/NotePreviewDialog";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,12 +32,26 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              borderRadius: '8px',
+              padding: '12px 20px',
+            },
+          }}
+        />
         <AuthProvider>
           <Navbar />
           <div className="container mx-auto px-4 py-8">
             {children}
           </div>
           <Footer />
+          <NotePreviewDialog />
         </AuthProvider>
       </body>
     </html>

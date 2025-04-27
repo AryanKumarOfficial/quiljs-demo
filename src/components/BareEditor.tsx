@@ -13,12 +13,14 @@ interface BareEditorProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    readOnly?: boolean;
 }
 
 const BareEditor: FC<BareEditorProps> = ({
     value,
     onChange,
     placeholder = "Start typing...",
+    readOnly = false,
 }) => {
     const handleChange = (newValue: string, _delta: any, source: string) => {
         if (source === "user") {
@@ -34,9 +36,10 @@ const BareEditor: FC<BareEditorProps> = ({
                     value={value}
                     onChange={handleChange}
                     placeholder={placeholder}
+                    readOnly={readOnly}
                     className="h-full w-full bg-white rounded-md overflow-hidden"
                     modules={{
-                        toolbar: [
+                        toolbar: readOnly ? false : [
                             [{ 'header': [1, 2, 3, false] }],
                             ['bold', 'italic', 'underline', 'strike'],
                             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
@@ -61,6 +64,9 @@ const BareEditor: FC<BareEditorProps> = ({
                 }
                 .ql-editor {
                     min-height: 200px;
+                }
+                .ql-disabled {
+                    background-color: #f9fafb;
                 }
             `}</style>
         </div>

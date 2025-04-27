@@ -1,37 +1,44 @@
-import { getServerSession } from "next-auth";
+"use client";
+
+import { useEffect } from "react";
+import { getSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
-import NotesSidebar from "@/components/NotesSidebar";
+import AuthProvider from "@/components/AuthProvider";
 import { Container } from "@/components/ui/container";
+import FolderSidebar from "@/components/FolderSidebar";
+import NotesSidebar from "@/components/NotesSidebar";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
-export const metadata = {
-  title: "Notes | Cloud Notes App",
-  description: "Your cloud notes dashboard and management",
-};
-
-export default async function NotesLayout({
+export default function NotesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    redirect("/login");
-  }
-
+  // Client-side auth check
+  useEffect(() => {
+    const checkSession = async () => {
+      const session = await getSession();
+      if (!session) {
+        redirect("/login");
+      }
+    };
+    
+    checkSession();
+  }, []);
+  
   return (
-    <Container className="py-6">
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-64 flex-shrink-0">
-          <div className="md:sticky md:top-24">
-            <NotesSidebar />
-          </div>
-        </div>
-        <div className="flex-grow min-w-0">
+    <div className="flex flex-col min-h-screen">
+      <div className="flex flex-grow w-full">
+        {/* Pass a placeholder userId; the component will fetch the actual data from the session */}
+        <NotesSidebar />
+        
+        <div className="flex-grow p-4 overflow-auto">
           {children}
         </div>
       </div>
-    </Container>
+      
+      <Footer />
+    </div>
   );
 }
