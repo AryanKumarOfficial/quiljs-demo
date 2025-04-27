@@ -25,6 +25,7 @@ interface FoldersState {
     folders: boolean;
     tags: boolean;
     views: boolean;
+    favorites: boolean;
   };
   isEditing: string | null;
   isCreatingFolder: boolean;
@@ -36,7 +37,7 @@ interface FoldersState {
   updateFolder: (id: string, updates: Partial<Folder>) => Promise<Folder | null>;
   deleteFolder: (id: string) => Promise<boolean>;
   setActiveFolder: (folderId: string) => void;
-  toggleSection: (section: 'folders' | 'tags' | 'views') => void;
+  toggleSection: (section: 'folders' | 'tags' | 'views' | 'favorites') => void;
   setIsEditing: (folderId: string | null) => void;
   setIsCreatingFolder: (isCreating: boolean) => void;
   setFolderBeingDeleted: (folder: Folder | null) => void;
@@ -54,6 +55,7 @@ export const useFoldersStore = create<FoldersState>()(
         folders: true,
         tags: true,
         views: true,
+        favorites: true,
       },
       isEditing: null,
       isCreatingFolder: false,
@@ -202,7 +204,7 @@ export const useFoldersStore = create<FoldersState>()(
 
       setActiveFolder: (folderId: string) => set({ activeFolder: folderId }),
       
-      toggleSection: (section: 'folders' | 'tags' | 'views') => 
+      toggleSection: (section: 'folders' | 'tags' | 'views' | 'favorites') => 
         set(state => ({ 
           expandedSections: {
             ...state.expandedSections,
