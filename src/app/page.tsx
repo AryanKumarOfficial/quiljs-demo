@@ -40,7 +40,7 @@ export default async function Home() {
       <TestimonialsSection />
       
       {/* Pricing Section */}
-      <PricingSection />
+      {/* <PricingSection /> */}
       
       {/* FAQ Section */}
       <FAQSection />

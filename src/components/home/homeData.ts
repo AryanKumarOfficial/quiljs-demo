@@ -121,28 +121,28 @@ export const testimonials = [
 // FAQ data
 export const faqItems = [
   {
-    question: "Is there a free plan available?",
-    answer: "Yes! We offer a generous free tier that includes up to 100 notes, 5 folders, and basic formatting features. You can upgrade anytime to get unlimited notes and advanced features."
+    question: "What types of notes can I create?",
+    answer: "We support three different note formats: rich text editing with our advanced editor, markdown notes with live preview, and simple plain text notes. You can choose the format that best suits your needs for each note."
   },
   {
-    question: "Can I access my notes offline?",
-    answer: "Absolutely. Our apps for desktop and mobile support full offline access. Your changes will sync automatically when you reconnect to the internet."
+    question: "How can I organize my notes?",
+    answer: "You can organize notes using folders, tags, and our powerful filtering system. Pin important notes to keep them at the top, mark favorites for quick access, and use our global search to find anything instantly."
   },
   {
-    question: "How secure are my notes?",
-    answer: "We use industry-standard encryption both in transit and at rest. Your data is stored in secure data centers, and we implement strict access controls. We also offer two-factor authentication for additional security."
+    question: "Can I share my notes with others?",
+    answer: "Yes! You can share individual notes with others. The app allows you to make notes public or share them directly with specific users."
   },
   {
-    question: "Can I collaborate with others?",
-    answer: "Yes! Our collaborative features allow you to share individual notes or entire folders with teammates. You can set different permission levels and see real-time edits."
+    question: "Is there a search function available?",
+    answer: "Absolutely. Our powerful global search allows you to search across all your notes. You can also filter notes by type, tags, folders, and other criteria to find exactly what you're looking for."
   },
   {
-    question: "Do you support rich text and markdown?",
-    answer: "We support both! You can switch between rich text editing and markdown mode, or use our hybrid mode that offers the best of both worlds."
+    question: "Can I access my notes on different devices?",
+    answer: "Yes, all your notes are securely stored in the cloud and synchronized across all your devices. Just log in to your account from any browser to access your complete note collection."
   },
   {
-    question: "Is there an API available?",
-    answer: "Yes, we offer a comprehensive API for developers who want to integrate our note-taking capabilities into their own applications or workflows."
+    question: "How do I create a new note?",
+    answer: "Simply click on the 'New Note' button either on your dashboard or in the notes section. You'll be able to choose between rich text, markdown, or plain text formats for your new note."
   }
 ];
 

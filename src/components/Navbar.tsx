@@ -66,22 +66,7 @@ export default function Navbar() {
             ),
             showOnlyWhenAuthenticated: true
         },
-        { 
-            label: "Responses", 
-            href: "/response",
-            icon: (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-            )
-        },
     ];
-
-    const handleSignOut = async () => {
-        await signOut({ redirect: false });
-        router.push('/login');
-        router.refresh();
-    };
 
     // Get first letter of name for avatar fallback
     const getInitials = () => {
@@ -94,16 +79,28 @@ export default function Navbar() {
         return "U";
     };
 
+    const handleSignOut = async () => {
+        await signOut({ redirect: false });
+        router.push('/login');
+        router.refresh();
+    };
+
     return (
-        <div className={`${scrolled ? 'shadow-md shadow-blue-900/10' : ''} transition-all duration-300 border-b ${scrolled ? 'border-slate-800/80' : 'border-slate-800'} bg-gradient-to-r from-slate-950 to-slate-900 backdrop-blur-md sticky top-0 z-40`}>
+        <div 
+            className={`${scrolled ? 'shadow-lg shadow-blue-900/20' : ''} 
+                transition-all duration-300 border-b 
+                ${scrolled ? 'border-slate-800/80 backdrop-blur-xl bg-slate-900/85' : 'border-slate-800/50 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950'} 
+                sticky top-0 z-40`}
+        >
             <Container>
                 <div className="flex h-16 items-center justify-between py-6">
+                    {/* Logo */}
                     <Link href="/" className="group flex items-center gap-2">
                         <motion.div 
                             initial={{ rotate: -10, opacity: 0 }}
                             animate={{ rotate: 0, opacity: 1 }}
                             transition={{ duration: 0.5 }}
-                            className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-lg group-hover:from-blue-500 group-hover:to-indigo-500 transition-all duration-300"
+                            className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-lg group-hover:from-blue-500 group-hover:to-indigo-500 transition-all duration-300 shadow-lg shadow-blue-500/20 ring-1 ring-white/10"
                         >
                             <svg
                                 className="w-5 h-5 text-white"
@@ -143,7 +140,7 @@ export default function Navbar() {
                                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-500 group-hover:from-blue-400 group-hover:to-indigo-400 transition-all duration-300">Rich</span>
                                 <span className="text-gray-200 group-hover:text-white transition-colors duration-300">Text</span>
                             </h1>
-                            <div className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                            <div className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                         </motion.div>
                     </Link>
                     
@@ -162,9 +159,9 @@ export default function Navbar() {
                                     >
                                         <Link
                                             href={item.href}
-                                            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all duration-200 ${
+                                            className={`relative group flex items-center gap-1.5 px-3 py-2 rounded-md transition-all duration-200 ${
                                                 isActive 
-                                                ? "text-white bg-slate-800" 
+                                                ? "text-white bg-slate-800/90 shadow-md shadow-blue-500/10 ring-1 ring-white/5" 
                                                 : "text-slate-300 hover:text-white hover:bg-slate-800/60"
                                             }`}
                                         >
@@ -174,14 +171,14 @@ export default function Navbar() {
                                             <span className="text-sm font-medium">{item.label}</span>
                                             {isActive && (
                                                 <motion.span 
-                                                    className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500"
+                                                    className="absolute bottom-0 left-0 right-0 mx-auto w-4/5 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
                                                     layoutId="navbar-indicator"
                                                 />
                                             )}
                                         </Link>
                                     </motion.div>
                                 );
-                        })}
+                            })}
                     </div>
 
                     {/* Global Search - Only show when authenticated */}
@@ -195,7 +192,9 @@ export default function Navbar() {
                     <div className="flex md:hidden">
                         <button 
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-md transition-colors duration-200"
+                            aria-expanded={mobileMenuOpen}
+                            aria-label="Toggle menu"
+                            className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -227,13 +226,13 @@ export default function Navbar() {
                     <div className="hidden md:flex items-center gap-4">
                         {isAuthenticated ? (
                             <>
-                                <HoverCard openDelay={200} closeDelay={100}>
+                                <HoverCard openDelay={100} closeDelay={100}>
                                     <HoverCardTrigger asChild>
                                         <motion.div
                                             initial={{ scale: 0.8, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
                                             transition={{ duration: 0.3, delay: 0.3 }}
-                                            className="cursor-pointer flex items-center gap-2 bg-slate-800/60 hover:bg-slate-800 px-3 py-1.5 rounded-full transition-colors duration-200"
+                                            className="cursor-pointer flex items-center gap-2 bg-gradient-to-r from-slate-800/80 to-slate-700/50 hover:from-slate-700/80 hover:to-slate-600/50 px-3 py-1.5 rounded-full transition-all duration-200 shadow-md shadow-blue-900/10 ring-1 ring-white/10"
                                         >
                                             <Avatar className="h-6 w-6 border-2 border-blue-500/80 ring-2 ring-blue-500/20">
                                                 <AvatarImage src={session?.user?.image || ''} />
@@ -249,9 +248,9 @@ export default function Navbar() {
                                             </svg>
                                         </motion.div>
                                     </HoverCardTrigger>
-                                    <HoverCardContent className="w-64 p-3 bg-slate-900 border border-slate-700 shadow-xl shadow-blue-900/20 backdrop-blur-lg">
+                                    <HoverCardContent className="w-64 p-3 bg-slate-900/95 border border-slate-700 shadow-xl shadow-blue-900/30 backdrop-blur-lg rounded-xl">
                                         <div className="flex items-center gap-3">
-                                            <Avatar className="border-2 border-blue-500">
+                                            <Avatar className="h-10 w-10 border-2 border-blue-500 ring-2 ring-blue-500/20">
                                                 <AvatarImage src={session?.user?.image || ''} />
                                                 <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
                                                     {getInitials()}
@@ -264,23 +263,10 @@ export default function Navbar() {
                                                 <p className="text-xs text-slate-400">
                                                     {session?.user?.email}
                                                 </p>
-                                                <Badge variant="outline" className="mt-1 text-xs text-blue-400 border-blue-500/30">Member</Badge>
+                                                <Badge variant="outline" className="mt-1 text-xs text-blue-400 border-blue-500/30 bg-blue-900/20">Member</Badge>
                                             </div>
                                         </div>
-                                        <div className="mt-3 pt-3 border-t border-slate-700/50 grid grid-cols-2 gap-2">
-                                            <Button 
-                                                asChild
-                                                variant="outline" 
-                                                className="text-white border-slate-700 hover:bg-slate-800 hover:text-white"
-                                                size="sm"
-                                            >
-                                                <Link href="/response/new">
-                                                    <svg className="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M12 5v14M5 12h14" />
-                                                    </svg>
-                                                    Create New
-                                                </Link>
-                                            </Button>
+                                        <div className="mt-3 pt-3 border-t border-slate-700/50 grid grid-cols-1 gap-2">
                                             <GradientButton 
                                                 onClick={handleSignOut} 
                                                 variant="destructive"
@@ -299,7 +285,7 @@ export default function Navbar() {
                                 </HoverCard>
                             </>
                         ) : (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                                 <motion.div 
                                     initial={{ x: 20, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
@@ -308,7 +294,7 @@ export default function Navbar() {
                                     <Button 
                                         asChild 
                                         variant="outline" 
-                                        className="text-white border-slate-700 hover:bg-slate-800 hover:text-white"
+                                        className="text-white border-slate-700/80 hover:bg-slate-800 hover:text-white focus:ring-2 focus:ring-blue-500/40"
                                         size="sm"
                                     >
                                         <Link href="/login" className="flex items-center gap-1.5">
@@ -323,10 +309,13 @@ export default function Navbar() {
                                     initial={{ x: 20, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
                                     transition={{ duration: 0.3, delay: 0.4 }}
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
                                 >
                                     <GradientButton 
                                         asChild
                                         size="sm"
+                                        className="shadow-md shadow-blue-600/20"
                                     >
                                         <Link href="/register" className="flex items-center gap-1.5">
                                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -353,10 +342,10 @@ export default function Navbar() {
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="md:hidden border-t border-slate-800/60 bg-slate-900/95"
+                        className="md:hidden border-t border-slate-800/60 bg-slate-900/90 backdrop-blur-lg"
                     >
                         <Container>
-                            <div className="py-4 space-y-1">
+                            <div className="py-4 space-y-2">
                                 {/* Show search in mobile menu too */}
                                 {isAuthenticated && (
                                     <div className="px-4 py-3 mb-2">
@@ -366,37 +355,43 @@ export default function Navbar() {
                                 
                                 {navItems
                                     .filter(item => !item.showOnlyWhenAuthenticated || (item.showOnlyWhenAuthenticated && isAuthenticated))
-                                    .map((item) => {
+                                    .map((item, index) => {
                                         const isActive = pathname === item.href;
                                         return (
-                                            <Link
+                                            <motion.div
                                                 key={item.href}
-                                                href={item.href}
-                                                onClick={() => setMobileMenuOpen(false)}
-                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg ${
-                                                    isActive 
-                                                        ? "bg-gradient-to-r from-slate-800 to-slate-800/80 text-white" 
-                                                        : "text-slate-300 hover:bg-slate-800/40 hover:text-white"
-                                                }`}
+                                                initial={{ opacity: 0, y: -5 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.05 }}
                                             >
-                                                <span className={`${isActive ? 'text-blue-400' : 'text-slate-400'}`}>
-                                                    {item.icon}
-                                                </span>
-                                                {item.label}
-                                                {isActive && (
-                                                    <motion.span
-                                                        layoutId="mobile-navbar-indicator"
-                                                        className="ml-auto h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-indigo-500"
-                                                    />
-                                                )}
-                                            </Link>
+                                                <Link
+                                                    href={item.href}
+                                                    onClick={() => setMobileMenuOpen(false)}
+                                                    className={`flex items-center gap-2 px-4 py-3 rounded-lg ${
+                                                        isActive 
+                                                            ? "bg-gradient-to-r from-slate-800 to-slate-800/80 text-white shadow-sm shadow-blue-500/10 ring-1 ring-white/5" 
+                                                            : "text-slate-300 hover:bg-slate-800/40 hover:text-white"
+                                                    }`}
+                                                >
+                                                    <span className={`${isActive ? 'text-blue-400' : 'text-slate-400'}`}>
+                                                        {item.icon}
+                                                    </span>
+                                                    <span className="font-medium">{item.label}</span>
+                                                    {isActive && (
+                                                        <motion.span
+                                                            layoutId="mobile-navbar-indicator"
+                                                            className="ml-auto h-full w-1 rounded-full bg-gradient-to-b from-blue-500 to-indigo-500"
+                                                        />
+                                                    )}
+                                                </Link>
+                                            </motion.div>
                                         );
-                                })}
+                                    })}
                                 
                                 {isAuthenticated ? (
-                                    <div className="mt-4 pt-4 border-t border-slate-800/60 space-y-4">
-                                        <div className="flex items-center gap-3 px-4 py-2 bg-slate-800/30 rounded-lg">
-                                            <Avatar className="h-8 w-8 border-2 border-blue-500/80 ring-2 ring-blue-500/20">
+                                    <div className="mt-4 pt-4 border-t border-slate-700/50 space-y-4">
+                                        <div className="flex items-center gap-3 px-4 py-3 bg-slate-800/50 rounded-lg ring-1 ring-white/5">
+                                            <Avatar className="h-10 w-10 border-2 border-blue-500/80 ring-2 ring-blue-500/20">
                                                 <AvatarImage src={session?.user?.image || ''} />
                                                 <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white text-xs">
                                                     {getInitials()}
@@ -409,7 +404,7 @@ export default function Navbar() {
                                                 <p className="text-xs text-slate-400">
                                                     {session?.user?.email}
                                                 </p>
-                                                <Badge variant="outline" className="mt-1 text-xs text-blue-400 border-blue-500/30">Member</Badge>
+                                                <Badge variant="outline" className="mt-1 text-xs text-blue-400 border-blue-500/30 bg-blue-900/20">Member</Badge>
                                             </div>
                                         </div>
                                         <div className="px-4 py-2">
@@ -419,7 +414,7 @@ export default function Navbar() {
                                                 size="sm"
                                                 className="w-full"
                                             >
-                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <svg className="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
                                                     <polyline points="16 17 21 12 16 7" />
                                                     <line x1="21" y1="12" x2="9" y2="12" />
@@ -429,15 +424,15 @@ export default function Navbar() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="mt-4 pt-4 border-t border-slate-800/60 px-4 py-3 space-y-2">
+                                    <div className="mt-4 pt-4 border-t border-slate-700/50 px-4 py-3 space-y-3">
                                         <Button 
                                             asChild 
                                             variant="outline" 
-                                            className="w-full text-white border-slate-700 hover:bg-slate-800 hover:text-white flex items-center justify-center gap-1.5"
+                                            className="w-full text-white border-slate-700/80 hover:bg-slate-800 hover:text-white flex items-center justify-center gap-1.5"
                                             size="sm"
                                         >
                                             <Link href="/login">
-                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                     <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
                                                 </svg>
                                                 Login
@@ -446,10 +441,10 @@ export default function Navbar() {
                                         <GradientButton 
                                             asChild
                                             size="sm"
-                                            className="w-full flex items-center justify-center gap-1.5"
+                                            className="w-full flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20"
                                         >
                                             <Link href="/register">
-                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                     <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
                                                     <circle cx="8.5" cy="7" r="4" />
                                                     <line x1="20" y1="8" x2="20" y2="14" />
