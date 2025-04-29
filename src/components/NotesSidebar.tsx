@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiTag, FiFilter, FiStar, FiPaperclip, FiClock, FiChevronDown, FiChevronUp, FiX, FiFolder } from "react-icons/fi";
 import { showToast } from "@/lib/utils";
 
-export default function NotesSidebar() {
+function NotesSidebarComponent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  
+
   const [tags, setTags] = useState<string[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(true);
   const [expandedSections, setExpandedSections] = useState({
@@ -22,7 +22,7 @@ export default function NotesSidebar() {
   const [folders, setFolders] = useState<string[]>([]);
   const [isLoadingFolders, setIsLoadingFolders] = useState(true);
   const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
-  
+
   // Get current filters from URL
   const currentTagFilter = searchParams?.get('tag') || null;
   const currentFolderFilter = searchParams?.get('folder') || null;
@@ -33,7 +33,7 @@ export default function NotesSidebar() {
       try {
         const response = await fetch("/api/notes/search?tagsOnly=true");
         if (!response.ok) throw new Error("Failed to fetch tags");
-        
+
         const data = await response.json();
         setTags(data.tags || []);
       } catch (error) {
@@ -53,7 +53,7 @@ export default function NotesSidebar() {
       try {
         const response = await fetch("/api/notes/folders");
         if (!response.ok) throw new Error("Failed to fetch folders");
-        
+
         const data = await response.json();
         setFolders(data.folders || []);
       } catch (error) {
@@ -85,10 +85,10 @@ export default function NotesSidebar() {
     // Don't wait for folders to be loaded before fetching counts
     // This ensures we get counts even when folder list might be cached
     fetchFolderCounts();
-    
+
     // Set up a refresh interval to periodically update folder counts
     const intervalId = setInterval(fetchFolderCounts, 30000); // Every 30 seconds
-    
+
     return () => clearInterval(intervalId);
   }, []); // Run once on component mount
 
@@ -145,14 +145,14 @@ export default function NotesSidebar() {
     <div className="w-64 border-r p-4 bg-white">
       {/* Views Section */}
       <div className="mb-6">
-        <div 
+        <div
           className="flex justify-between items-center mb-2 cursor-pointer"
           onClick={() => toggleSection('views')}
         >
           <h3 className="text-sm font-medium text-gray-600">VIEWS</h3>
           {expandedSections.views ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
         </div>
-        
+
         <AnimatePresence>
           {expandedSections.views && (
             <motion.div
@@ -165,36 +165,32 @@ export default function NotesSidebar() {
               <div className="space-y-1 pl-1">
                 <div
                   onClick={() => router.push('/notes/all')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                    isViewActive('all') ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${isViewActive('all') ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   <FiFilter className="mr-2" />
                   All Notes
                 </div>
-                <div 
+                <div
                   onClick={() => applyFilter('isFavorite', 'true')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                    isViewActive('favorites') ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${isViewActive('favorites') ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   <FiStar className="mr-2" />
                   Favorites
                 </div>
                 <div
                   onClick={() => applyFilter('isPinned', 'true')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                    isViewActive('pinned') ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${isViewActive('pinned') ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   <FiPaperclip className="mr-2" />
                   Pinned
                 </div>
-                <div 
+                <div
                   onClick={() => applyFilter('sort', '-lastAccessed')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                    isViewActive('recent') ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${isViewActive('recent') ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   <FiClock className="mr-2" />
                   Recent
@@ -207,14 +203,14 @@ export default function NotesSidebar() {
 
       {/* Folders Section */}
       <div className="mb-6">
-        <div 
+        <div
           className="flex justify-between items-center mb-2 cursor-pointer"
           onClick={() => toggleSection('folders')}
         >
           <h3 className="text-sm font-medium text-gray-600">FOLDERS</h3>
           {expandedSections.folders ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
         </div>
-        
+
         <AnimatePresence>
           {expandedSections.folders && (
             <motion.div
@@ -234,9 +230,8 @@ export default function NotesSidebar() {
                 <div className="space-y-1 pl-1">
                   <div
                     onClick={() => handleFolderClick("All Notes")}
-                    className={`flex items-center justify-between px-2 py-1 rounded-md cursor-pointer ${
-                      !currentFolderFilter ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                    }`}
+                    className={`flex items-center justify-between px-2 py-1 rounded-md cursor-pointer ${!currentFolderFilter ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                      }`}
                   >
                     <div className="flex items-center">
                       <FiFolder className="mr-2" />
@@ -251,9 +246,8 @@ export default function NotesSidebar() {
                       <div
                         key={index}
                         onClick={() => handleFolderClick(folder)}
-                        className={`flex items-center justify-between px-2 py-1 rounded-md cursor-pointer ${
-                          currentFolderFilter === folder ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                        className={`flex items-center justify-between px-2 py-1 rounded-md cursor-pointer ${currentFolderFilter === folder ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                          }`}
                       >
                         <div className="flex items-center">
                           <FiFolder className="mr-2" />
@@ -284,14 +278,14 @@ export default function NotesSidebar() {
 
       {/* Tags Section */}
       <div className="mb-6">
-        <div 
+        <div
           className="flex justify-between items-center mb-2 cursor-pointer"
           onClick={() => toggleSection('tags')}
         >
           <h3 className="text-sm font-medium text-gray-600">TAGS</h3>
           {expandedSections.tags ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
         </div>
-        
+
         <AnimatePresence>
           {expandedSections.tags && (
             <motion.div
@@ -313,9 +307,8 @@ export default function NotesSidebar() {
                     <div
                       key={index}
                       onClick={() => applyFilter('tag', tag)}
-                      className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                        currentTagFilter === tag ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                      className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${currentTagFilter === tag ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                        }`}
                     >
                       <FiTag className="mr-2" />
                       {tag}
@@ -342,14 +335,14 @@ export default function NotesSidebar() {
 
       {/* Filters Section */}
       <div className="mb-6">
-        <div 
+        <div
           className="flex justify-between items-center mb-2 cursor-pointer"
           onClick={() => toggleSection('filters')}
         >
           <h3 className="text-sm font-medium text-gray-600">FILTERS</h3>
           {expandedSections.filters ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
         </div>
-        
+
         <AnimatePresence>
           {expandedSections.filters && (
             <motion.div
@@ -362,36 +355,32 @@ export default function NotesSidebar() {
               <div className="space-y-1 pl-1">
                 <div
                   onClick={() => applyFilter('editorType', 'rich')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                    searchParams?.get('editorType') === 'rich' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${searchParams?.get('editorType') === 'rich' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   <span className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full text-[10px] mr-2">R</span>
                   Rich Text Notes
                 </div>
                 <div
                   onClick={() => applyFilter('editorType', 'markdown')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                    searchParams?.get('editorType') === 'markdown' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${searchParams?.get('editorType') === 'markdown' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   <span className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full text-[10px] mr-2">M</span>
                   Markdown Notes
                 </div>
                 <div
                   onClick={() => applyFilter('editorType', 'simple')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                    searchParams?.get('editorType') === 'simple' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${searchParams?.get('editorType') === 'simple' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   <span className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full text-[10px] mr-2">T</span>
                   Plain Text Notes
                 </div>
                 <div
                   onClick={() => applyFilter('isPublic', 'true')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                    searchParams?.get('isPublic') === 'true' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${searchParams?.get('isPublic') === 'true' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   <svg className="mr-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -401,9 +390,8 @@ export default function NotesSidebar() {
                 </div>
                 <div
                   onClick={() => applyFilter('hasShares', 'true')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${
-                    searchParams?.get('hasShares') === 'true' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${searchParams?.get('hasShares') === 'true' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   <svg className="mr-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -433,5 +421,24 @@ export default function NotesSidebar() {
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="flex flex-col items-center justify-center h-64">
+      <div className="animate-pulse flex flex-col items-center">
+        <div className="h-8 w-32 bg-gray-200 rounded mb-4"></div>
+        <div className="h-32 w-full max-w-md bg-gray-100 rounded"></div>
+      </div>
+    </div>
+  );
+}
+
+export default function NotesSidebar() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <NotesSidebarComponent />
+    </Suspense>
   );
 }

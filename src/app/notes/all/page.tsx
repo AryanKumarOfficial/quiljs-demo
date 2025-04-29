@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -13,7 +13,7 @@ import { FiFilter, FiSearch, FiFolder, FiTag, FiChevronDown, FiPlus, FiX } from 
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function AllNotesPage() {
+function AllNotes() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const isLoading = status === "loading";
@@ -44,31 +44,31 @@ export default function AllNotesPage() {
       try {
         // Build query parameters
         const params = new URLSearchParams();
-        
+
         if (searchQuery) {
           params.append("query", searchQuery);
         }
-        
+
         if (selectedFolder) {
           params.append("folder", selectedFolder);
         }
-        
+
         if (selectedTag) {
           params.append("tag", selectedTag);
         }
-        
+
         params.append("sort", sortOrder);
         params.append("limit", "100");
 
         const response = await fetch(`/api/notes?${params.toString()}`);
-        
+
         if (!response.ok) {
           throw new Error("Failed to fetch notes");
         }
-        
+
         const data = await response.json();
         setNotes(data.notes);
-        
+
         // Extract unique folders and tags
         if (!selectedFolder && !selectedTag) {
           const uniqueFolders = Array.from(new Set(data.notes.map((note: any) => note.folder)));
@@ -78,7 +78,7 @@ export default function AllNotesPage() {
           setFolders(uniqueFolders as string[]);
           setTags(uniqueTags as string[]);
         }
-        
+
       } catch (error: any) {
         toast.error(error.message || "Error fetching notes");
       } finally {
@@ -112,7 +112,7 @@ export default function AllNotesPage() {
 
   return (
     <Container className="py-8">
-      <motion.div 
+      <motion.div
         className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -120,7 +120,7 @@ export default function AllNotesPage() {
       >
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">All Notes</h1>
         <div className="flex flex-col sm:flex-row gap-2">
-          <motion.div 
+          <motion.div
             className="relative"
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.2 }}
@@ -167,7 +167,7 @@ export default function AllNotesPage() {
           >
             <Card className="p-4 border shadow-md bg-white">
               <div className="flex flex-wrap gap-6">
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
@@ -183,11 +183,10 @@ export default function AllNotesPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: index * 0.05, duration: 0.2 }}
                         onClick={() => setSelectedFolder(selectedFolder === folder ? null : folder)}
-                        className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
-                          selectedFolder === folder
-                            ? "bg-blue-100 text-blue-700 border border-blue-300 shadow"
-                            : "bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
-                        }`}
+                        className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${selectedFolder === folder
+                          ? "bg-blue-100 text-blue-700 border border-blue-300 shadow"
+                          : "bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
+                          }`}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -196,8 +195,8 @@ export default function AllNotesPage() {
                     ))}
                   </div>
                 </motion.div>
-                
-                <motion.div 
+
+                <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.2 }}
@@ -213,11 +212,10 @@ export default function AllNotesPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: index * 0.03, duration: 0.2 }}
                         onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                        className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
-                          selectedTag === tag
-                            ? "bg-blue-100 text-blue-700 border border-blue-300 shadow"
-                            : "bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
-                        }`}
+                        className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${selectedTag === tag
+                          ? "bg-blue-100 text-blue-700 border border-blue-300 shadow"
+                          : "bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
+                          }`}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -226,8 +224,8 @@ export default function AllNotesPage() {
                     ))}
                   </div>
                 </motion.div>
-                
-                <motion.div 
+
+                <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.3 }}
@@ -251,14 +249,14 @@ export default function AllNotesPage() {
                   </select>
                 </motion.div>
               </div>
-              
+
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.4 }}
               >
                 <Separator className="my-4" />
-                
+
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-gray-500">
                     {(selectedFolder || selectedTag || searchQuery) && (
@@ -277,10 +275,10 @@ export default function AllNotesPage() {
                     )}
                   </div>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={clearFilters} 
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilters}
                       className="text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
                     >
                       <FiX className="mr-1" /> Clear filters
@@ -294,7 +292,7 @@ export default function AllNotesPage() {
       </AnimatePresence>
 
       {isLoadingNotes ? (
-        <motion.div 
+        <motion.div
           className="flex justify-center items-center h-64"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -349,4 +347,25 @@ export default function AllNotesPage() {
       )}
     </Container>
   );
+}
+
+function LoadingSkeleton() {
+  return (
+    <Container className="py-8">
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading your notes...</p>
+        </div>
+      </div>
+    </Container>
+  );
+}
+
+export default function AllNotesPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <AllNotes />
+    </Suspense>
+  )
 }

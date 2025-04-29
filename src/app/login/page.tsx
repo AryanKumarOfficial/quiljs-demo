@@ -1,12 +1,12 @@
 'use client';
 
-import { FormEvent, useState, useEffect } from 'react';
+import { FormEvent, useState, useEffect, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 
-export default function LoginPage() {
+function Login() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
@@ -19,7 +19,7 @@ export default function LoginPage() {
     if (registered === 'true') {
       toast.success('Registration successful! Please log in with your new account.');
     }
-    
+
     const unauthorized = searchParams.get('unauthorized');
     if (unauthorized === 'true') {
       toast.error('Please log in to access this page');
@@ -28,32 +28,32 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error('Please fill in all fields');
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
       const loadingToast = toast.loading('Signing you in...');
-      
+
       const result = await signIn('credentials', {
         redirect: false,
         email,
         password,
       });
-      
+
       toast.dismiss(loadingToast);
-      
+
       if (result?.error) {
         toast.error('Invalid email or password');
         return;
       }
-      
+
       toast.success('Login successful!');
-      
+
       // Redirect to home page after successful login
       router.push('/');
       router.refresh();
@@ -89,7 +89,7 @@ export default function LoginPage() {
             Sign in to access your responses
           </p>
         </div>
-        
+
         <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md space-y-4">
             <div>
@@ -108,7 +108,7 @@ export default function LoginPage() {
                 placeholder="Email address"
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
@@ -137,7 +137,7 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
-        
+
         <div className="text-sm text-center mt-4">
           Don&apos;t have an account?{' '}
           <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
@@ -147,4 +147,24 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <div className="max-w-md w-full space-y-8 p-6 bg-white rounded-lg shadow-md">
+        <div>
+          <h1 className="text-center text-3xl font-bold text-gray-900">Loading...</h1>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <Login />
+    </Suspense>
+  )
 }

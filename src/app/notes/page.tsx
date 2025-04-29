@@ -23,12 +23,12 @@ type NoteListItem = {
     updatedAt: string;
     lastAccessed: string;
     editorType: string;
-    color?: string;    
-    isPublic?: boolean;  
-    sharedWith?: string[];  
+    color?: string;
+    isPublic?: boolean;
+    sharedWith?: string[];
 };
 
-export default function NotesPage() {
+function Notes() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -50,22 +50,22 @@ export default function NotesPage() {
 
     const fetchNotes = useCallback(async () => {
         if (!session?.user?.id) return;
-        
+
         try {
             setLoading(true);
-            
+
             // Build URL with search params
             const apiUrl = new URL("/api/notes", window.location.origin);
-            
+
             // Add all search parameters from the current URL
             searchParams.forEach((value, key) => {
                 apiUrl.searchParams.append(key, value);
             });
-            
+
             // Check if we're in a filtered view
             const isFiltered = searchParams.size > 0;
             setFilteredView(isFiltered);
-            
+
             // Create a description of the filter
             if (isFiltered) {
                 const folder = searchParams.get('folder');
@@ -73,7 +73,7 @@ export default function NotesPage() {
                 const editorType = searchParams.get('editorType');
                 const isFavorite = searchParams.get('isFavorite');
                 const isPinned = searchParams.get('isPinned');
-                
+
                 let description = 'Showing notes';
                 if (folder) description += ` in folder "${folder}"`;
                 if (tag) description += ` with tag "${tag}"`;
@@ -87,43 +87,43 @@ export default function NotesPage() {
                 }
                 if (isFavorite === 'true') description += ` that are favorited`;
                 if (isPinned === 'true') description += ` that are pinned`;
-                
+
                 setFilterDescription(description);
             } else {
                 setFilterDescription("");
             }
-            
+
             // Fetch notes from API endpoint
             const response = await fetch(apiUrl);
-            
+
             if (!response.ok) {
                 throw new Error("Failed to fetch notes");
             }
-            
+
             const data = await response.json();
             const notesData = data.notes; // Access the 'notes' array from the API response
             setNotes(notesData);
-            
+
             // Process notes after fetching
             const pinned = notesData.filter((note: NoteListItem) => note.isPinned);
             setPinnedNotes(pinned);
-            
+
             // Find recent notes that are not pinned
             const recent = notesData
                 .filter((note: NoteListItem) => !note.isPinned)
                 .sort((a: NoteListItem, b: NoteListItem) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())
                 .slice(0, 5);
             setRecentNotes(recent);
-            
+
             // Find favorites that are not in pinned or recent
             const favorites = notesData
-                .filter((note: NoteListItem) => 
-                    note.isFavorite && 
-                    !note.isPinned && 
+                .filter((note: NoteListItem) =>
+                    note.isFavorite &&
+                    !note.isPinned &&
                     !recent.some((rn: NoteListItem) => rn._id === note._id))
                 .slice(0, 5);
             setFavoriteNotes(favorites);
-            
+
             setError(null);
         } catch (err: any) {
             console.error("Error fetching notes:", err);
@@ -166,8 +166,8 @@ export default function NotesPage() {
                 <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
                     <h2 className="text-lg font-medium mb-2">Error loading notes</h2>
                     <p>{error}</p>
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className="mt-4"
                         onClick={fetchNotes}
                     >
@@ -180,7 +180,7 @@ export default function NotesPage() {
 
     return (
         <Container className="py-8">
-            <motion.div 
+            <motion.div
                 className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -192,8 +192,8 @@ export default function NotesPage() {
                 <div className="flex flex-col sm:flex-row gap-2">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Link href="/notes/all">
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 className="flex items-center gap-2"
                             >
                                 <FiFilter /> Browse All
@@ -246,8 +246,8 @@ export default function NotesPage() {
                             <NotesList notes={notes} showViewToggle={true} />
                         </Suspense>
                     </div>
-                    
-                    <motion.div 
+
+                    <motion.div
                         whileHover={{ scale: 1.02 }}
                         transition={{ duration: 0.2 }}
                         className="inline-block"
@@ -290,7 +290,7 @@ export default function NotesPage() {
                         </div>
                     )}
 
-                    <motion.div 
+                    <motion.div
                         whileHover={{ scale: 1.02 }}
                         transition={{ duration: 0.2 }}
                         className="inline-block"
@@ -306,5 +306,26 @@ export default function NotesPage() {
                 </div>
             )}
         </Container>
+    );
+}
+
+function LoadingSkeleton() {
+    return (
+        <Container className="py-8">
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-pulse flex flex-col items-center">
+                    <div className="h-8 w-32 bg-gray-200 rounded mb-4"></div>
+                    <div className="h-32 w-full max-w-md bg-gray-100 rounded"></div>
+                </div>
+            </div>
+        </Container>
+    );
+}
+
+export default function NotesPage() {
+    return (
+        <Suspense fallback={<LoadingSkeleton />}>
+            <Notes />
+        </Suspense>
     );
 }

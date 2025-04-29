@@ -1,11 +1,11 @@
 'use client';
 
-import { FormEvent, useState, useEffect } from 'react';
+import { FormEvent, useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 
-export default function RegisterPage() {
+function Register() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [name, setName] = useState('');
@@ -24,12 +24,12 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !email || !password) {
       toast.error('Please fill in all fields');
       return;
     }
-    
+
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -39,12 +39,12 @@ export default function RegisterPage() {
       toast.error('Password must be at least 8 characters long');
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
       const loadingToast = toast.loading('Creating your account...');
-      
+
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
@@ -52,17 +52,17 @@ export default function RegisterPage() {
         },
         body: JSON.stringify({ name, email, password }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         toast.dismiss(loadingToast);
         throw new Error(data.error || 'Registration failed');
       }
-      
+
       toast.dismiss(loadingToast);
       toast.success('Registration successful! You can now login.');
-      
+
       // Redirect to login page after successful registration
       router.push('/login?registered=true');
     } catch (err: any) {
@@ -83,7 +83,7 @@ export default function RegisterPage() {
             Create an account to store your responses
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md space-y-4">
             <div>
@@ -119,7 +119,7 @@ export default function RegisterPage() {
                 placeholder="Email address"
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
@@ -136,7 +136,7 @@ export default function RegisterPage() {
                 placeholder="Password (min 8 characters)"
               />
             </div>
-            
+
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 Confirm Password
@@ -165,7 +165,7 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
-        
+
         <div className="text-sm text-center mt-4">
           Already have an account?{' '}
           <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
@@ -175,4 +175,27 @@ export default function RegisterPage() {
       </div>
     </div>
   );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-pulse flex space-x-4">
+        <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
+        <div className="flex-1 space-y-4 py-1">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="h-4 bg-gray-200 rounded w-full"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <Register />
+    </Suspense>
+  )
 }
