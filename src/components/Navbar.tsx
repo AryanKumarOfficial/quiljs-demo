@@ -17,6 +17,14 @@ import {
 } from "@/components/ui/hover-card";
 import GlobalSearch from "./GlobalSearch";
 
+// Define breakpoints for responsive design
+const breakpoints = {
+    sm: '640px',
+    md: '768px',
+    lg: '1024px',
+    xl: '1280px',
+};
+
 export default function Navbar() {
     const pathname = usePathname();
     const router = useRouter();
@@ -34,6 +42,23 @@ export default function Navbar() {
         
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Close mobile menu when route changes
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [pathname]);
+
+    // Close mobile menu when window is resized past the breakpoint
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 768) { // md breakpoint
+                setMobileMenuOpen(false);
+            }
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     const navItems = [
@@ -144,8 +169,8 @@ export default function Navbar() {
                         </motion.div>
                     </Link>
                     
-                    {/* Desktop Navigation */}
-                    <div className="hidden md:flex gap-6 items-center">
+                    {/* Desktop & Tablet Navigation */}
+                    <div className="hidden md:flex gap-3 lg:gap-6 items-center">
                         {navItems
                             .filter(item => !item.showOnlyWhenAuthenticated || (item.showOnlyWhenAuthenticated && isAuthenticated))
                             .map((item, index) => {
@@ -159,7 +184,7 @@ export default function Navbar() {
                                     >
                                         <Link
                                             href={item.href}
-                                            className={`relative group flex items-center gap-1.5 px-3 py-2 rounded-md transition-all duration-200 ${
+                                            className={`relative group flex items-center gap-1.5 px-2 lg:px-3 py-2 rounded-md transition-all duration-200 ${
                                                 isActive 
                                                 ? "text-white bg-slate-800/90 shadow-md shadow-blue-500/10 ring-1 ring-white/5" 
                                                 : "text-slate-300 hover:text-white hover:bg-slate-800/60"
@@ -188,7 +213,7 @@ export default function Navbar() {
                         </div>
                     )}
 
-                    {/* Mobile Menu Button */}
+                    {/* Mobile Menu Button with animated hamburger */}
                     <div className="flex md:hidden">
                         <button 
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -196,34 +221,28 @@ export default function Navbar() {
                             aria-label="Toggle menu"
                             className="p-2 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                {mobileMenuOpen ? (
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                ) : (
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                )}
-                            </svg>
+                            <div className="w-6 h-5 relative flex flex-col justify-between">
+                                <span 
+                                    className={`w-6 h-0.5 bg-current transform transition-all duration-300 ease-in-out ${
+                                        mobileMenuOpen ? 'rotate-45 translate-y-2' : ''
+                                    }`}
+                                />
+                                <span 
+                                    className={`w-6 h-0.5 bg-current transform transition-all duration-300 ease-in-out ${
+                                        mobileMenuOpen ? 'opacity-0' : 'opacity-100'
+                                    }`}
+                                />
+                                <span 
+                                    className={`w-6 h-0.5 bg-current transform transition-all duration-300 ease-in-out ${
+                                        mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''
+                                    }`}
+                                />
+                            </div>
                         </button>
                     </div>
 
                     {/* User Controls */}
-                    <div className="hidden md:flex items-center gap-4">
+                    <div className="hidden md:flex items-center gap-2 lg:gap-4">
                         {isAuthenticated ? (
                             <>
                                 <HoverCard openDelay={100} closeDelay={100}>
@@ -240,7 +259,7 @@ export default function Navbar() {
                                                     {getInitials()}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <span className="text-sm font-medium text-white">
+                                            <span className="hidden lg:inline text-sm font-medium text-white">
                                                 {session?.user?.name?.split(' ')[0] || session?.user?.email?.split('@')[0] || 'User'}
                                             </span>
                                             <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none">
@@ -285,7 +304,7 @@ export default function Navbar() {
                                 </HoverCard>
                             </>
                         ) : (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 lg:gap-3">
                                 <motion.div 
                                     initial={{ x: 20, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
@@ -297,11 +316,11 @@ export default function Navbar() {
                                         className="text-white border-slate-700/80 hover:bg-slate-800 hover:text-white focus:ring-2 focus:ring-blue-500/40"
                                         size="sm"
                                     >
-                                        <Link href="/login" className="flex items-center gap-1.5">
+                                        <Link href="/login" className="flex items-center gap-1">
                                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                 <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
                                             </svg>
-                                            Login
+                                            <span className="hidden lg:inline">Login</span>
                                         </Link>
                                     </Button>
                                 </motion.div>
@@ -317,14 +336,14 @@ export default function Navbar() {
                                         size="sm"
                                         className="shadow-md shadow-blue-600/20"
                                     >
-                                        <Link href="/register" className="flex items-center gap-1.5">
+                                        <Link href="/register" className="flex items-center gap-1">
                                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                 <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
                                                 <circle cx="8.5" cy="7" r="4" />
                                                 <line x1="20" y1="8" x2="20" y2="14" />
                                                 <line x1="23" y1="11" x2="17" y2="11" />
                                             </svg>
-                                            Register
+                                            <span className="hidden lg:inline">Register</span>
                                         </Link>
                                     </GradientButton>
                                 </motion.div>
@@ -338,17 +357,17 @@ export default function Navbar() {
             <AnimatePresence>
                 {mobileMenuOpen && (
                     <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="md:hidden border-t border-slate-800/60 bg-slate-900/90 backdrop-blur-lg"
+                        initial={{ opacity: 0, height: 0, y: -10 }}
+                        animate={{ opacity: 1, height: "auto", y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -10 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="md:hidden border-t border-slate-800/60 bg-slate-900/95 backdrop-blur-lg shadow-lg shadow-slate-900/20"
                     >
                         <Container>
                             <div className="py-4 space-y-2">
                                 {/* Show search in mobile menu too */}
                                 {isAuthenticated && (
-                                    <div className="px-4 py-3 mb-2">
+                                    <div className="px-2 py-3 mb-2">
                                         <GlobalSearch />
                                     </div>
                                 )}

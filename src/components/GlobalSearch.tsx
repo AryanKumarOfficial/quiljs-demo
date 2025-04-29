@@ -11,13 +11,21 @@ import {
   FiTag, 
   FiFilter, 
   FiStar, 
-  FiCalendar
+  FiCalendar,
+  FiArrowLeft
 } from "react-icons/fi";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Define breakpoints for consistent responsive behavior
+const breakpoints = {
+  sm: '640px',
+  md: '768px',
+  lg: '1024px'
+};
 
 interface SearchResult {
   id: string;
@@ -52,9 +60,21 @@ export default function GlobalSearch() {
   });
   const [availableFolders, setAvailableFolders] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Detect mobile view
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -145,7 +165,9 @@ export default function GlobalSearch() {
   // Focus input when search is opened
   useEffect(() => {
     if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
   }, [isOpen]);
 
@@ -323,7 +345,7 @@ export default function GlobalSearch() {
     return count;
   }, [filters]);
 
-  // Render filter UI
+  // Render filter UI - now with responsive design
   const renderFilters = () => (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -331,7 +353,7 @@ export default function GlobalSearch() {
       exit={{ opacity: 0, height: 0 }}
       className="border-t border-gray-200"
     >
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-sm font-medium text-gray-700">Search Filters</h3>
           <Button 
@@ -351,12 +373,12 @@ export default function GlobalSearch() {
               <FiFolder className="mr-1.5" size={14} />
               Folders
             </h4>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {availableFolders.map(folder => (
                 <Badge
                   key={folder}
                   variant={filters.folder === folder ? "default" : "outline"}
-                  className={`cursor-pointer ${filters.folder === folder 
+                  className={`cursor-pointer text-xs sm:text-sm py-0.5 ${filters.folder === folder 
                     ? 'bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-300' 
                     : 'hover:bg-gray-100'}`}
                   onClick={() => toggleFilter('folder', folder)}
@@ -373,7 +395,7 @@ export default function GlobalSearch() {
               <FiCalendar className="mr-1.5" size={14} />
               Time Range
             </h4>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {[
                 { value: 'all', label: 'All time' },
                 { value: 'today', label: 'Today' },
@@ -383,7 +405,7 @@ export default function GlobalSearch() {
                 <Badge
                   key={option.value}
                   variant={filters.timeRange === option.value ? "default" : "outline"}
-                  className={`cursor-pointer ${filters.timeRange === option.value 
+                  className={`cursor-pointer text-xs sm:text-sm py-0.5 ${filters.timeRange === option.value 
                     ? 'bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-300' 
                     : 'hover:bg-gray-100'}`}
                   onClick={() => toggleFilter('timeRange', option.value)}
@@ -398,7 +420,7 @@ export default function GlobalSearch() {
           <div>
             <Badge
               variant={filters.onlyPinned ? "default" : "outline"}
-              className={`cursor-pointer ${filters.onlyPinned 
+              className={`cursor-pointer text-xs sm:text-sm py-0.5 ${filters.onlyPinned 
                 ? 'bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-300' 
                 : 'hover:bg-gray-100'}`}
               onClick={() => toggleFilter('onlyPinned', null)}
@@ -412,7 +434,7 @@ export default function GlobalSearch() {
     </motion.div>
   );
 
-  // Render content based on state
+  // Render content based on state - now with responsive design
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -427,12 +449,12 @@ export default function GlobalSearch() {
       if (Object.keys(groupedResults).length > 0) {
         return (
           <div>
-            <p className="px-4 py-2 text-xs text-gray-500">
+            <p className="px-3 sm:px-4 py-2 text-xs text-gray-500">
               {results.length} {results.length === 1 ? 'result' : 'results'} found
             </p>
             {Object.entries(groupedResults).map(([folder, folderResults]) => (
               <div key={folder} className="mb-3">
-                <div className="px-4 py-1 text-xs font-medium text-gray-500 flex items-center bg-slate-50">
+                <div className="px-3 sm:px-4 py-1 text-xs font-medium text-gray-500 flex items-center bg-slate-50">
                   <FiFolder className="mr-1.5" size={12} />
                   {folder}
                 </div>
@@ -445,7 +467,7 @@ export default function GlobalSearch() {
                   return (
                     <div
                       key={result.id || result._id}
-                      className={`px-4 py-3 cursor-pointer transition-colors duration-150 ${
+                      className={`px-3 sm:px-4 py-2 sm:py-3 cursor-pointer transition-colors duration-150 ${
                         selectedIndex === overallIndex 
                           ? "bg-blue-50 border-l-2 border-blue-500" 
                           : "hover:bg-gray-50 border-l-2 border-transparent"
@@ -460,8 +482,8 @@ export default function GlobalSearch() {
                         <div className="flex-grow min-w-0">
                           <p className="font-medium text-gray-900 truncate flex items-center">
                             {result.title || "Untitled Note"}
-                            {selectedIndex === overallIndex && (
-                              <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-gray-100 border rounded text-gray-500">
+                            {selectedIndex === overallIndex && !isMobile && (
+                              <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-gray-100 border rounded text-gray-500 hidden sm:inline-block">
                                 Enter
                               </kbd>
                             )}
@@ -473,12 +495,17 @@ export default function GlobalSearch() {
                             {result.tags && result.tags.length > 0 && (
                               <div className="flex items-center mr-3">
                                 <FiTag className="text-gray-400 mr-1" size={12} />
-                                <div className="flex gap-1">
-                                  {result.tags.map((tag, i) => (
+                                <div className="flex gap-1 flex-wrap">
+                                  {result.tags.slice(0, isMobile ? 1 : 3).map((tag, i) => (
                                     <Badge key={i} variant="secondary" className="text-xs py-0 px-1">
                                       {tag}
                                     </Badge>
                                   ))}
+                                  {result.tags.length > (isMobile ? 1 : 3) && (
+                                    <Badge variant="secondary" className="text-xs py-0 px-1">
+                                      +{result.tags.length - (isMobile ? 1 : 3)}
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -501,8 +528,8 @@ export default function GlobalSearch() {
 
     if (query.trim() && !isLoading) {
       return (
-        <div className="p-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 text-gray-300">
+        <div className="p-4 sm:p-8 text-center">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gray-300">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
                 d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -517,11 +544,11 @@ export default function GlobalSearch() {
     if (recentSearches.length > 0) {
       return (
         <div>
-          <p className="px-4 py-2 text-xs text-gray-500">Recent searches</p>
+          <p className="px-3 sm:px-4 py-2 text-xs text-gray-500">Recent searches</p>
           {recentSearches.map((term, index) => (
             <div
               key={term}
-              className={`px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-center
+              className={`px-3 sm:px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center
                 ${activeSection === 'recent' && index === 0 ? 'bg-blue-50' : ''}`}
               onClick={() => handleSearchClick(term)}
             >
@@ -529,7 +556,7 @@ export default function GlobalSearch() {
               <span className="text-gray-700">{term}</span>
             </div>
           ))}
-          <div className="px-4 py-3 text-xs text-right">
+          <div className="px-3 sm:px-4 py-3 text-xs text-right">
             <Button
               variant="ghost"
               size="sm"
@@ -547,8 +574,8 @@ export default function GlobalSearch() {
     }
 
     return (
-      <div className="p-8 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 text-gray-300">
+      <div className="p-4 sm:p-8 text-center">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gray-300">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -562,36 +589,50 @@ export default function GlobalSearch() {
     );
   };
 
+  // Responsive search button based on screen size
   if (!isOpen) {
     return (
       <Button
         variant="outline"
-        className="w-full sm:w-[260px] justify-between text-gray-500 bg-slate-800/60 hover:bg-slate-700/70 border-slate-700 text-slate-300"
+        className="w-full relative flex items-center justify-between text-gray-500 bg-slate-800/60 hover:bg-slate-700/70 border-slate-700 text-slate-300"
         onClick={() => setIsOpen(true)}
       >
         <div className="flex items-center">
-          <FiSearch className="mr-2" />
-          <span>Search notes...</span>
+          <FiSearch className="mr-1.5 sm:mr-2" />
+          <span className="text-sm sm:text-base truncate">Search notes...</span>
         </div>
-        <kbd className="hidden md:inline-flex items-center gap-1 rounded border bg-slate-700 px-1.5 text-xs text-slate-400">
+        <kbd className="hidden md:inline-flex items-center gap-1 rounded border bg-slate-700 px-1.5 font-mono text-xs text-slate-400">
           <span className="text-xs">⌘</span>K
         </kbd>
       </Button>
     );
   }
 
+  // Enhanced mobile UX for the search modal
   return (
-    <div className="fixed inset-0 bg-gray-800/80 backdrop-blur-sm z-50 flex items-start justify-center pt-[15vh] animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-gray-800/80 backdrop-blur-sm z-50 flex items-start justify-center pt-0 sm:pt-[15vh] animate-in fade-in duration-200">
       <motion.div
         ref={searchContainerRef}
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: isMobile ? 20 : -20 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
+        exit={{ opacity: 0, y: isMobile ? 20 : -20 }}
         transition={{ type: "spring", duration: 0.5 }}
-        className="w-full max-w-2xl"
+        className={`w-full ${isMobile ? 'h-full' : 'max-w-2xl'}`}
       >
-        <Card className="bg-white rounded-lg shadow-2xl max-h-[60vh] flex flex-col overflow-hidden">
+        <Card className={`bg-white shadow-2xl flex flex-col overflow-hidden
+          ${isMobile ? 'h-full rounded-none' : 'max-h-[70vh] rounded-lg mt-4'}`}>
+          {/* Header with back button for mobile */}
           <div className="p-3 flex items-center border-b">
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsOpen(false)}
+                className="mr-1 -ml-1 p-1 h-8 w-8 text-gray-500"
+              >
+                <FiArrowLeft size={18} />
+              </Button>
+            )}
             <div className="p-1 text-gray-500">
               <FiSearch size={18} />
             </div>
@@ -601,15 +642,25 @@ export default function GlobalSearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search notes by title, content or tags..."
+              placeholder="Search notes..."
               className="flex-grow outline-none border-none bg-transparent px-2 py-1 text-gray-800 placeholder-gray-400 text-base"
               autoComplete="off"
             />
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 ml-1">
+              {query && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full w-7 h-7 p-0 flex items-center justify-center"
+                  onClick={() => setQuery('')}
+                >
+                  <FiX size={16} />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
-                className={`text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full w-8 h-8 p-0 flex items-center justify-center ${activeFilterCount > 0 ? 'text-blue-500 bg-blue-50' : ''}`}
+                className={`text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full w-7 h-7 p-0 flex items-center justify-center ${activeFilterCount > 0 ? 'text-blue-500 bg-blue-50' : ''}`}
                 onClick={() => setShowFilters(prev => !prev)}
                 title="Search filters"
               >
@@ -624,15 +675,17 @@ export default function GlobalSearch() {
                   <FiFilter size={16} />
                 )}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full w-8 h-8 p-0 flex items-center justify-center"
-                onClick={() => setIsOpen(false)}
-                title="Close"
-              >
-                <FiX size={16} />
-              </Button>
+              {!isMobile && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full w-7 h-7 p-0 flex items-center justify-center"
+                  onClick={() => setIsOpen(false)}
+                  title="Close"
+                >
+                  <FiX size={16} />
+                </Button>
+              )}
             </div>
           </div>
           
@@ -644,25 +697,40 @@ export default function GlobalSearch() {
             {renderContent()}
           </div>
           
+          {/* Footer with keyboard shortcuts - hide some on mobile */}
           <Separator />
-          <div className="p-3 text-xs text-gray-500 flex flex-wrap justify-between items-center bg-gray-50 rounded-b-lg">
-            <div className="flex items-center">
-              <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs mr-1">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs">↓</kbd>
-              <span className="ml-1">Navigate</span>
-            </div>
-            <div>
-              <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs mr-1">/</kbd>
-              <span>Toggle filters</span>
-            </div>
-            <div>
-              <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs mr-1">Tab</kbd>
-              <span>Switch sections</span>
-            </div>
-            <div>
-              <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs mr-1">Esc</kbd>
-              <span>Close</span>
-            </div>
+          <div className="p-2 sm:p-3 text-xs text-gray-500 flex flex-wrap justify-between items-center bg-gray-50 rounded-b-lg gap-y-1 gap-x-2">
+            {!isMobile ? (
+              <>
+                <div className="flex items-center">
+                  <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs mr-1">↑</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs">↓</kbd>
+                  <span className="ml-1">Navigate</span>
+                </div>
+                <div>
+                  <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs mr-1">/</kbd>
+                  <span>Filters</span>
+                </div>
+                <div className="hidden sm:block">
+                  <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs mr-1">Tab</kbd>
+                  <span>Sections</span>
+                </div>
+                <div>
+                  <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs mr-1">Esc</kbd>
+                  <span>Close</span>
+                </div>
+              </>
+            ) : (
+              <div className="w-full flex justify-between">
+                <div className="flex items-center">
+                  <kbd className="px-1.5 py-0.5 bg-white border rounded text-xs mr-1">/</kbd>
+                  <span>Filters</span>
+                </div>
+                {!showFilters && results.length > 0 && (
+                  <div>{results.length} {results.length === 1 ? 'result' : 'results'}</div>
+                )}
+              </div>
+            )}
           </div>
         </Card>
       </motion.div>

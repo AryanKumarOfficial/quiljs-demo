@@ -62,12 +62,12 @@ export function Hero({
     },
   };
 
-  // Layout-based styles
+  // Layout-based styles - improved for better mobile responsiveness
   const layoutStyles = {
-    default: "flex flex-col lg:flex-row items-center gap-16",
+    default: "flex flex-col lg:flex-row items-center gap-8 lg:gap-16",
     centered: "flex flex-col items-center text-center",
-    reversed: "flex flex-col lg:flex-row-reverse items-center gap-16",
-    overlapping: "relative grid grid-cols-1 lg:grid-cols-2 items-center",
+    reversed: "flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-16",
+    overlapping: "relative grid grid-cols-1 lg:grid-cols-2 items-center pt-10 md:pt-16 pb-32 md:pb-16 gap-y-12 md:gap-y-0",
   };
 
   const renderShapes = () => (
@@ -88,7 +88,7 @@ export function Hero({
 
   return (
     <div className={cn(
-      "relative overflow-hidden px-6 py-24 sm:py-32 lg:px-8",
+      "relative overflow-hidden px-4 sm:px-6 py-16 sm:py-24 md:py-28 lg:py-32 lg:px-8",
       themeStyles[theme].bg,
       className
     )}>
@@ -159,18 +159,24 @@ export function Hero({
       <div className="mx-auto max-w-7xl">
         <div className={layoutStyles[layout]}>
           <div className={cn(
-            layout === "centered" ? "w-full max-w-4xl mx-auto" : layout === "overlapping" ? "col-span-1 lg:col-span-2 z-10" : "lg:w-1/2", 
+            layout === "centered" ? "w-full max-w-4xl mx-auto" : 
+            layout === "overlapping" ? "col-span-1 lg:col-span-2 z-10" : 
+            "w-full lg:w-1/2", 
             contentClassName
           )}>
             <MotionDiv 
               animation={layout === "reversed" ? "slideLeft" : "slideRight"} 
-              className={layout === "centered" ? "" : layout === "overlapping" ? "lg:w-1/2" : "lg:pr-8"} 
+              className={cn(
+                layout === "centered" ? "" : 
+                layout === "overlapping" ? "lg:w-1/2 pr-0 sm:pr-4" : 
+                "lg:pr-8"
+              )} 
               delay={0.1}
             >
               {/* Handle title as string or custom React node */}
               {typeof title === "string" ? (
                 <h1 className={cn(
-                  "text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl", 
+                  "text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight", 
                   themeStyles[theme].text
                 )}>
                   {title}
@@ -180,11 +186,11 @@ export function Hero({
               )}
 
               <div className={cn(
-                "mt-6", 
+                "mt-4 sm:mt-6", 
                 themeStyles[theme].subtext
               )}>
                 {typeof subtitle === "string" ? (
-                  <p className="text-lg leading-8 max-w-3xl">
+                  <p className="text-base sm:text-lg leading-7 sm:leading-8 max-w-3xl">
                     {subtitle}
                   </p>
                 ) : (
@@ -192,29 +198,29 @@ export function Hero({
                 )}
               </div>
 
-              <div className="mt-10 flex items-center gap-x-6">
+              <div className="mt-6 sm:mt-8 md:mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-x-6">
                 {primaryAction && (
-                  <div>{primaryAction}</div>
+                  <div className="w-full sm:w-auto">{primaryAction}</div>
                 )}
                 {!primaryAction && primaryActionLabel && (
                   <GradientButton
                     onClick={onPrimaryAction}
                     size="lg"
-                    className="text-base font-semibold"
+                    className="w-full sm:w-auto text-base font-semibold"
                   >
                     {primaryActionLabel}
                   </GradientButton>
                 )}
                 
                 {secondaryAction && (
-                  <div>{secondaryAction}</div>
+                  <div className="w-full sm:w-auto mt-3 sm:mt-0">{secondaryAction}</div>
                 )}
                 {!secondaryAction && secondaryActionLabel && (
                   <GradientButton
                     variant="ghost"
                     onClick={onSecondaryAction}
                     size="lg"
-                    className="text-base font-semibold"
+                    className="w-full sm:w-auto mt-3 sm:mt-0 text-base font-semibold"
                   >
                     {secondaryActionLabel}
                   </GradientButton>
@@ -227,9 +233,10 @@ export function Hero({
             <MotionDiv 
               animation={layout === "reversed" ? "slideRight" : layout === "overlapping" ? "slideUp" : "slideLeft"} 
               className={cn(
-                layout === "centered" ? "mt-16 w-full max-w-lg mx-auto" : 
-                layout === "overlapping" ? "absolute right-0 top-0 w-3/4 lg:w-2/3 h-full" : 
-                "lg:w-1/2 mt-10 lg:mt-0",
+                layout === "centered" ? "mt-10 sm:mt-12 md:mt-16 w-full max-w-lg mx-auto" : 
+                layout === "overlapping" ? 
+                  "lg:absolute lg:right-0 lg:top-0 w-full sm:w-4/5 md:w-3/4 lg:w-2/3 h-auto lg:h-full px-4 sm:px-0 mx-auto sm:mr-0 sm:ml-auto" : 
+                "w-full lg:w-1/2 mt-8 lg:mt-0",
                 illustrationClassName
               )} 
               delay={0.3}
