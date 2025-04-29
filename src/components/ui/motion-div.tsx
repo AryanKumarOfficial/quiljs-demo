@@ -4,10 +4,10 @@ import { motion, Variants } from "framer-motion";
 import { cn } from "../../lib/utils";
 
 interface MotionDivProps extends Omit<React.ComponentProps<typeof motion.div>, 'variants'> {
-  children: React.ReactNode;
+  children?: React.ReactNode; // Changed from required to optional
   delay?: number;
   duration?: number;
-  animation?: "fadeIn" | "slideUp" | "slideLeft" | "slideRight" | "scale";
+  animation?: "fadeIn" | "slideUp" | "slideLeft" | "slideRight" | "scale" | "fadeInScale" | "bounce" | "rotate" | "slideBounce" | "pulsate";
   once?: boolean;
 }
 
@@ -42,16 +42,82 @@ export const MotionDiv = ({
       hidden: { opacity: 0, scale: 0.9 },
       visible: { opacity: 1, scale: 1 },
     },
+    fadeInScale: {
+      hidden: { opacity: 0, scale: 0.8 },
+      visible: { 
+        opacity: 1, 
+        scale: 1,
+        transition: {
+          type: "spring",
+          stiffness: 100,
+          damping: 15
+        }
+      },
+    },
+    bounce: {
+      hidden: { y: -20, opacity: 0 },
+      visible: { 
+        y: 0, 
+        opacity: 1,
+        transition: {
+          type: "spring",
+          stiffness: 300,
+          damping: 10
+        }
+      },
+    },
+    rotate: {
+      hidden: { opacity: 0, rotateZ: -5 },
+      visible: { 
+        opacity: 1, 
+        rotateZ: 0,
+        transition: {
+          type: "spring",
+          stiffness: 150,
+          damping: 20
+        }
+      },
+    },
+    slideBounce: {
+      hidden: { opacity: 0, x: -40 },
+      visible: { 
+        opacity: 1, 
+        x: 0,
+        transition: {
+          type: "spring",
+          stiffness: 200,
+          damping: 12
+        }
+      },
+    },
+    pulsate: {
+      hidden: { opacity: 0, scale: 1 },
+      visible: { 
+        opacity: 1,
+        scale: [1, 1.05, 1],
+        transition: {
+          duration: 0.8,
+          times: [0, 0.5, 1],
+          ease: "easeInOut"
+        }
+      },
+    }
   };
+
+  // Fixed the transition property check
+  const hasCustomTransition = Object.prototype.hasOwnProperty.call(
+    variants[animation].visible, 
+    'transition'
+  );
 
   return (
     <motion.div
       className={cn(className)}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once }}
+      viewport={{ once, margin: "-50px" }}
       variants={variants[animation]}
-      transition={{ duration, delay }}
+      transition={!hasCustomTransition ? { duration, delay } : { delay }}
       {...props}
     >
       {children}
