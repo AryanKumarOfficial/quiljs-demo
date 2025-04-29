@@ -7,7 +7,7 @@ import Note from "@/models/Note";
 // Get a specific note by ID
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -18,7 +18,7 @@ export async function GET(
             );
         }
 
-        const { id } = params;
+        const { id } = await params;
         await connectToDatabase();
 
         const note = await Note.findOne({
@@ -53,7 +53,7 @@ export async function GET(
 // Update a specific note by ID
 export async function PUT(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -64,7 +64,7 @@ export async function PUT(
             );
         }
 
-        const { id } = params;
+        const { id } = await params;
         const body = await req.json();
 
         await connectToDatabase();
@@ -101,7 +101,7 @@ export async function PUT(
 // Delete a specific note by ID
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -112,7 +112,7 @@ export async function DELETE(
             );
         }
 
-        const { id } = params;
+        const { id } = await params;
         await connectToDatabase();
 
         // Only allow deleting own notes

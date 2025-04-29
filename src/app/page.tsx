@@ -20,7 +20,9 @@ export default async function Home() {
           </>
         }
         subtitle="Create, organize, and access your notes from anywhere. Rich text editing with cloud sync and sharing features."
-        image="/file.svg"
+        illustration={
+          <img src="/file.svg" alt="Cloud Notes" className="w-full h-auto" />
+        }
         primaryAction={
           isAuthenticated ? (
             <Link href="/notes">

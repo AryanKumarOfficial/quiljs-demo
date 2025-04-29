@@ -4,108 +4,71 @@ import { authOptions } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 import Note from "@/models/Note";
 
-// Get all folders for the current user
+async function requireAuth() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+        throw { status: 401, message: "Not authenticated" };
+    }
+    return session.user.id as string;
+}
+
 export async function GET(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session || !session.user) {
-            return NextResponse.json(
-                { error: "Not authenticated" },
-                { status: 401 }
-            );
-        }
-
+        const userId = await requireAuth();
         await connectToDatabase();
-
-        // Get distinct folders for the user
-        const folders = await Note.distinct("folder", { 
-            userId: session.user.id 
-        });
-
+        const folders = await Note.distinct<string>("folder", { userId });
         return NextResponse.json({ folders });
-    } catch (error: any) {
-        console.error("Error fetching folders:", error);
+    } catch (err: any) {
         return NextResponse.json(
-            { error: error.message || "Failed to fetch folders" },
-            { status: 500 }
+            { error: err.message || "Failed to fetch folders" },
+            { status: err.status || 500 }
         );
     }
 }
 
-// Create a new folder (by creating a note in that folder)
 export async function POST(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session || !session.user) {
-            return NextResponse.json(
-                { error: "Not authenticated" },
-                { status: 401 }
-            );
-        }
-
-        const body = await req.json();
-        const { name } = body;
-
+        const userId = await requireAuth();
+        const { name } = await req.json();
         if (!name || typeof name !== "string") {
-            return NextResponse.json(
-                { error: "Folder name is required" },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: "Folder name is required" }, { status: 400 });
         }
 
         await connectToDatabase();
-
-        // Check if this folder already exists for this user
-        const existingFolder = await Note.findOne({
-            folder: name,
-            userId: session.user.id
-        });
-
-        // If not, create a placeholder note in this folder
-        if (!existingFolder) {
-            const note = new Note({
-                title: `${name} - Getting Started`,
-                content: `Welcome to your new folder "${name}". This is your first note in this folder.`,
-                folder: name,
-                userId: session.user.id,
-                editorType: "rich"
-            });
-
-            await note.save();
+        const exists = await Note.exists({ folder: name, userId });
+        if (exists) {
+            return NextResponse.json(
+                { success: false, message: `Folder "${name}" already exists` },
+                { status: 409 }
+            );
         }
 
-        return NextResponse.json({ 
-            success: true, 
-            folderName: name,
-            message: existingFolder ? "Folder already exists" : "Folder created successfully" 
+        const note = new Note({
+            title: `${name} - Getting Started`,
+            content: `Welcome to "${name}". This is your first note in this folder.`,
+            folder: name,
+            userId,
+            editorType: "rich",
         });
-    } catch (error: any) {
-        console.error("Error creating folder:", error);
+        await note.save();
+
         return NextResponse.json(
-            { error: error.message || "Failed to create folder" },
-            { status: 500 }
+            { success: true, folderName: name, message: "Folder created successfully" },
+            { status: 201 }
+        );
+    } catch (err: any) {
+        return NextResponse.json(
+            { error: err.message || "Failed to create folder" },
+            { status: err.status || 500 }
         );
     }
 }
 
-// Update (rename) a folder
 export async function PUT(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session || !session.user) {
-            return NextResponse.json(
-                { error: "Not authenticated" },
-                { status: 401 }
-            );
-        }
-
-        const body = await req.json();
-        const { oldName, newName } = body;
-
-        if (!oldName || !newName || typeof oldName !== "string" || typeof newName !== "string") {
+        const userId = await requireAuth();
+        const { oldName, newName } = await req.json();
+        if (![oldName, newName].every(n => n && typeof n === "string")) {
             return NextResponse.json(
                 { error: "Both old and new folder names are required" },
                 { status: 400 }
@@ -113,81 +76,80 @@ export async function PUT(req: NextRequest) {
         }
 
         await connectToDatabase();
+        if (oldName === newName) {
+            return NextResponse.json(
+                { success: false, message: "Old and new folder names are the same" },
+                { status: 400 }
+            );
+        }
 
-        // Update all notes in the old folder to the new folder name
+        // Check if the target newName already exists
+        const conflict = await Note.exists({ folder: newName, userId });
+        if (conflict) {
+            return NextResponse.json(
+                { success: false, message: `Folder "${newName}" already exists` },
+                { status: 409 }
+            );
+        }
+
         const result = await Note.updateMany(
-            { folder: oldName, userId: session.user.id },
+            { folder: oldName, userId },
             { $set: { folder: newName } }
         );
 
         return NextResponse.json({
             success: true,
             message: `Folder renamed from "${oldName}" to "${newName}"`,
-            modifiedCount: result.modifiedCount
+            modifiedCount: result.modifiedCount,
+            deletedCount: 0,
         });
-    } catch (error: any) {
-        console.error("Error renaming folder:", error);
+    } catch (err: any) {
         return NextResponse.json(
-            { error: error.message || "Failed to rename folder" },
-            { status: 500 }
+            { error: err.message || "Failed to rename folder" },
+            { status: err.status || 500 }
         );
     }
 }
 
-// Delete a folder and optionally its notes
 export async function DELETE(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session || !session.user) {
-            return NextResponse.json(
-                { error: "Not authenticated" },
-                { status: 401 }
-            );
-        }
-        
-        // Get parameters from URL instead of body
+        const userId = await requireAuth();
         const url = new URL(req.url);
         const name = url.searchParams.get("name");
         const deleteNotes = url.searchParams.get("deleteNotes") === "true";
 
         if (!name) {
-            return NextResponse.json(
-                { error: "Folder name is required" },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: "Folder name is required" }, { status: 400 });
         }
 
         await connectToDatabase();
 
-        let result;
+        let modifiedCount = 0;
+        let deletedCount = 0;
+
         if (deleteNotes) {
-            // Delete all notes in this folder
-            result = await Note.deleteMany({
-                folder: name,
-                userId: session.user.id
-            });
+            const res = await Note.deleteMany({ folder: name, userId });
+            deletedCount = res.deletedCount ?? 0;
         } else {
-            // Move notes to "Default" folder instead of deleting them
-            result = await Note.updateMany(
-                { folder: name, userId: session.user.id },
+            const res = await Note.updateMany(
+                { folder: name, userId },
                 { $set: { folder: "Default" } }
             );
+            modifiedCount = res.modifiedCount;
         }
 
         return NextResponse.json({
             success: true,
-            message: deleteNotes 
-                ? `Folder "${name}" and all its notes deleted` 
-                : `Folder "${name}" deleted, notes moved to Default folder`,
-            modifiedCount: result.modifiedCount,
-            deletedCount: result.deletedCount || 0
+            message: deleteNotes
+                ? `Folder "${name}" and all its notes deleted`
+                : `Folder "${name}" deleted; notes moved to Default`,
+            modifiedCount,
+            deletedCount,
         });
-    } catch (error: any) {
-        console.error("Error deleting folder:", error);
+    } catch (err: any) {
         return NextResponse.json(
-            { error: error.message || "Failed to delete folder" },
-            { status: 500 }
+            { error: err.message || "Failed to delete folder" },
+            { status: err.status || 500 }
         );
     }
 }

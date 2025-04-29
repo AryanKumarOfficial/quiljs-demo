@@ -11,13 +11,13 @@ import { Document } from 'mongoose';
 import { FiArrowLeft } from "react-icons/fi";
 
 interface NotePageProps {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
 export async function generateMetadata({ params }: NotePageProps) {
-    const { id } = params;
+    const { id } = await params;
     await connectToDatabase();
 
     try {
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: NotePageProps) {
 }
 
 export default async function NotePage({ params }: NotePageProps) {
-    const { id } = params;
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -80,8 +80,8 @@ export default async function NotePage({ params }: NotePageProps) {
         editorType: notePlainDoc.editorType || 'rich',
         userId: notePlainDoc.userId.toString(),
         isPublic: Boolean(notePlainDoc.isPublic),
-        sharedWith: Array.isArray(notePlainDoc.sharedWith) 
-            ? notePlainDoc.sharedWith.map((id: any) => id.toString()) 
+        sharedWith: Array.isArray(notePlainDoc.sharedWith)
+            ? notePlainDoc.sharedWith.map((id: any) => id.toString())
             : [],
         lastAccessed: notePlainDoc.lastAccessed || new Date(),
         updatedAt: notePlainDoc.updatedAt || new Date(),
@@ -97,8 +97,8 @@ export default async function NotePage({ params }: NotePageProps) {
         <Container className="py-6">
             <div className="mb-4">
                 <Link href="/notes">
-                    <Button 
-                        variant="ghost" 
+                    <Button
+                        variant="ghost"
                         className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
                     >
                         <FiArrowLeft /> Back to Notes
