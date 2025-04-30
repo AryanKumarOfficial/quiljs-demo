@@ -14,6 +14,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Dialog } from "@/components/ui/dialog";
 import ReactMarkdown from "react-markdown";
 import { showToast } from "@/lib/utils";
+import { useNotesStore } from "@/store/notesStore";
+import { Types } from "mongoose";
 
 interface NotesEditorProps {
   note?: INote;
@@ -23,6 +25,9 @@ interface NotesEditorProps {
 
 export default function NotesEditor({ note, isNew = false, readOnly = false }: NotesEditorProps) {
   const router = useRouter();
+  // Get functions from the global store
+  const { updateNote, togglePinned, toggleFavorite: toggleFavoriteStore, togglePublic: togglePublicStore } = useNotesStore();
+  
   const [title, setTitle] = useState(note?.title || "Untitled Note");
   const [content, setContent] = useState(note?.content || "");
   const [editorType, setEditorType] = useState<"rich" | "markdown" | "simple">(
@@ -71,7 +76,11 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
   }, []);
 
   // Get the note ID - could be either id or _id depending on how MongoDB data is processed
-  const getNoteId = () => note?._id || note?.id;
+  const getNoteId = () => {
+    if (!note) return null;
+    const id = note._id || note.id;
+    return typeof id === 'string' ? id : id?.toString();
+  };
 
   // Save the note
   const saveNote = async () => {
@@ -92,12 +101,15 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
         isFavorite,
         isPinned,
         isPublic,
-        color
+        color,
+        updatedAt: new Date().toISOString(),
+        lastAccessed: new Date().toISOString()
       };
 
+      const noteId = getNoteId();
       const url = isNew
         ? "/api/notes"
-        : `/api/notes/${getNoteId()}`;
+        : `/api/notes/${noteId}`;
 
       const method = isNew ? "POST" : "PUT";
 
@@ -110,18 +122,36 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save note");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to save note: ${response.status}`);
       }
 
       const savedNote = await response.json();
+      
+      // Handle both response formats - direct note or {data: note}
+      const noteResult = savedNote.data || savedNote;
 
       if (isNew) {
-        router.replace(`/notes/${savedNote._id || savedNote.id}`);
+        const newNoteId = noteResult._id || noteResult.id;
+        if (newNoteId) {
+          showToast.success("Note created successfully");
+          router.replace(`/notes/${newNoteId}`);
+        } else {
+          throw new Error("Invalid response from server");
+        }
       } else {
         showToast.success("Note saved successfully");
+        // Use updateNote from the store to ensure global state is updated
+        if (!isNew) {
+          const noteId = getNoteId();
+          if (noteId) {
+            await updateNote(noteId, noteData);
+          }
+        }
         router.refresh();
       }
     } catch (error: any) {
+      console.error("Error saving note:", error);
       showToast.error(error.message || "Failed to save note");
     } finally {
       setIsSaving(false);
@@ -172,19 +202,65 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  // Toggle favorite status
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
+  // Toggle favorite status - use global store
+  const handleToggleFavorite = async () => {
+    if (isNew) {
+      setIsFavorite(!isFavorite);
+      return;
+    }
+    
+    const noteId = getNoteId();
+    if (!noteId) return;
+    
+    try {
+      await toggleFavoriteStore(noteId);
+      setIsFavorite(!isFavorite);
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to update note");
+    }
   };
 
-  // Toggle pinned status
-  const togglePinned = () => {
-    setIsPinned(!isPinned);
+  // Toggle pinned status - use global store
+  const handleTogglePinned = async () => {
+    if (isNew) {
+      setIsPinned(!isPinned);
+      return;
+    }
+    
+    const noteId = getNoteId();
+    if (!noteId) return;
+    
+    try {
+      // Update local state immediately for better UX
+      const newPinnedState = !isPinned;
+      setIsPinned(newPinnedState);
+      
+      // Then update the store
+      await togglePinned(noteId);
+      showToast.success(`Note ${!newPinnedState ? "pinned" : "unpinned"} successfully`);
+    } catch (error: any) {
+      // Revert on error
+      setIsPinned(isPinned);
+      showToast.error(error.message || "Failed to update note");
+    }
   };
 
-  // Toggle public status
-  const togglePublic = () => {
-    setIsPublic(!isPublic);
+  // Toggle public status - use global store
+  const handleTogglePublic = async () => {
+    if (isNew) {
+      setIsPublic(!isPublic);
+      return;
+    }
+    
+    const noteId = getNoteId();
+    if (!noteId) return;
+    
+    try {
+      await togglePublicStore(noteId);
+      setIsPublic(!isPublic);
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to update note");
+    }
   };
 
   // Color options
@@ -271,7 +347,7 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={toggleFavorite}
+                  onClick={handleToggleFavorite}
                   className={isFavorite ? "text-yellow-500 border-yellow-500" : ""}
                   title={isFavorite ? "Remove from favorites" : "Add to favorites"}
                 >
@@ -286,7 +362,7 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={togglePinned}
+                  onClick={handleTogglePinned}
                   className={isPinned ? "text-blue-500 border-blue-500" : ""}
                   title={isPinned ? "Unpin note" : "Pin note"}
                 >
@@ -362,7 +438,7 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={togglePublic}
+                  onClick={handleTogglePublic}
                   className={isPublic ? "bg-green-50 text-green-700" : ""}
                   title={isPublic ? "Make private" : "Make public"}
                 >

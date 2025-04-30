@@ -18,23 +18,41 @@ interface NotesListProps {
 
 export default function NotesList({ notes: initialNotes, showViewToggle = false }: NotesListProps) {
   // Get state and actions from Zustand store
-  const { updateNote, deleteNote } = useNotesStore();
+  const { notes: allNotes, updateNote, deleteNote, togglePinned, togglePublic } = useNotesStore();
   const { viewMode, setViewMode, openPreviewDialog } = useUIStore();
   
   // Local state for UI interactions
   const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
-  const [notes, setNotes] = useState(initialNotes);
+  const [displayNotes, setDisplayNotes] = useState<INote[]>([]);
 
-  // Sync local notes state when initialNotes changes
+  // Use effect to merge the initialNotes with the global store notes to get real-time updates
   useEffect(() => {
-    setNotes(initialNotes);
-  }, [initialNotes]);
+    if (!initialNotes || initialNotes.length === 0) {
+      setDisplayNotes([]);
+      return;
+    }
+
+    // For each note in the initial array, check if there's a more up-to-date version in allNotes
+    const updatedNotes = initialNotes
+      .filter(note => note !== null && note !== undefined)
+      .map(note => {
+        const id = note._id || note.id;
+        const globalNote = allNotes.find(n => (n._id === id || n.id === id));
+        // Use the global store version if available, as it's more up-to-date
+        return globalNote || note;
+      });
+    
+    setDisplayNotes(updatedNotes);
+  }, [initialNotes, allNotes]);
   
   const router = useRouter();
 
   // Function to get a snippet of the content for preview
   const getContentPreview = (content: string): string => {
+    // Handle undefined or null content
+    if (!content) return '';
+    
     // Strip HTML for rich text content
     const plainText = content.replace(/<[^>]*>/g, "");
     return plainText.length > 100 ? plainText.substring(0, 100) + "..." : plainText;
@@ -66,7 +84,7 @@ export default function NotesList({ notes: initialNotes, showViewToggle = false 
     }
   };
 
-  if (notes.length === 0) {
+  if (displayNotes.length === 0) {
     return <p className="text-gray-500 italic">No notes found</p>;
   }
 
@@ -82,9 +100,6 @@ export default function NotesList({ notes: initialNotes, showViewToggle = false 
         showToast.success("Note deleted successfully", {
           icon: '🗑️',
         });
-        
-        // Update local state
-        setNotes(prevNotes => prevNotes.filter(note => note._id !== noteId));
       }
     } catch (error: any) {
       showToast.error(error.message || "Failed to delete note");
@@ -106,19 +121,25 @@ export default function NotesList({ notes: initialNotes, showViewToggle = false 
     e.stopPropagation(); // Prevent event bubbling
 
     try {
-      const updatedNote = await updateNote(noteId, { isPinned: !isPinned });
-      
-      if (updatedNote) {
-        showToast.success(`Note ${!isPinned ? "pinned" : "unpinned"} successfully`);
-        // Update local state
-        setNotes(prevNotes => 
-          prevNotes.map(note => 
-            note._id === noteId || note.id === noteId ? { ...note, isPinned: !isPinned } : note
-          )
-        );
-      }
+      // Use the store's togglePinned function directly
+      await togglePinned(noteId);
+      showToast.success(`Note ${isPinned ? "unpinned" : "pinned"} successfully`);
     } catch (error: any) {
       showToast.error(error.message || "Failed to update note");
+    }
+  };
+
+  // Function to toggle public status
+  const handleTogglePublic = async (noteId: string, isPublic: boolean, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation
+    e.stopPropagation(); // Prevent event bubbling
+
+    try {
+      // Use the store's togglePublic function directly
+      await togglePublic(noteId);
+      showToast.success(`Note is now ${isPublic ? "private" : "public"}`);
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to update note visibility");
     }
   };
 
@@ -128,6 +149,9 @@ export default function NotesList({ notes: initialNotes, showViewToggle = false 
     e.stopPropagation();
     openPreviewDialog(note);
   };
+
+  // Check if we have any displayNotes, if not, fall back to initialNotes
+  const notesToRender = displayNotes.length > 0 ? displayNotes : initialNotes;
 
   return (
     <div>
@@ -163,7 +187,7 @@ export default function NotesList({ notes: initialNotes, showViewToggle = false 
 
       <div className={`${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-3"}`}>
         <AnimatePresence>
-          {notes.map((note) => {
+          {notesToRender.filter(note => note && note._id).map((note) => {
             const id = note.id || note._id;
             const isHovered = hoveredNoteId === id;
             const textColor = getTextColor(note?.color);
@@ -248,6 +272,18 @@ export default function NotesList({ notes: initialNotes, showViewToggle = false 
                             title={note.isPinned ? "Unpin" : "Pin"}
                           >
                             <FiPaperclip size={16} className={note.isPinned ? "transform rotate-45" : ""} />
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => handleTogglePublic(id, Boolean(note.isPublic), e)}
+                            className={`p-1 rounded ${note.isPublic ? 'text-green-600' : 'text-gray-600 hover:text-green-600'}`}
+                            title={note.isPublic ? "Make Private" : "Make Public"}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                              <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
                           </motion.button>
                           <motion.button
                             whileHover={{ scale: 1.1 }}

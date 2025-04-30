@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FiPlus, FiFileText, FiFilter, FiFolder } from "react-icons/fi";
 import { Container } from "@/components/ui/container";
 import { motion } from "framer-motion";
+import { useNotesStore } from "@/store/notesStore";
 
 // Define a type that matches what NotesList expects
 type NoteListItem = {
@@ -32,14 +33,45 @@ function Notes() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
+    
+    // Get notes data directly from the store and listen for changes
+    const { notes: storeNotes = [], loading: storeLoading, fetchNotes } = useNotesStore();
+    
     const [notes, setNotes] = useState<NoteListItem[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [pinnedNotes, setPinnedNotes] = useState<NoteListItem[]>([]);
-    const [recentNotes, setRecentNotes] = useState<NoteListItem[]>([]);
-    const [favoriteNotes, setFavoriteNotes] = useState<NoteListItem[]>([]);
     const [filteredView, setFilteredView] = useState<boolean>(false);
     const [filterDescription, setFilterDescription] = useState<string>("");
+
+    // Derived state from store data - recalculated whenever store notes change
+    const pinnedNotes = (storeNotes || []).filter((note): note is NoteListItem => 
+        note !== undefined && note !== null && typeof note === 'object' && 'isPinned' in note && note.isPinned === true
+    );
+    
+    const recentNotes = (storeNotes || [])
+        .filter((note): note is NoteListItem => 
+            note !== undefined && note !== null && typeof note === 'object' && 
+            'isPinned' in note && note.isPinned === false &&
+            'lastAccessed' in note && typeof note.lastAccessed === 'string'
+        )
+        .sort((a, b) => {
+            try {
+                return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
+            } catch (err) {
+                return 0;
+            }
+        })
+        .slice(0, 5);
+    
+    const favoriteNotes = (storeNotes || [])
+        .filter((note): note is NoteListItem => 
+            note !== undefined && note !== null && typeof note === 'object' && 
+            'isFavorite' in note && note.isFavorite === true &&
+            'isPinned' in note && note.isPinned === false &&
+            '_id' in note && 'id' in note &&
+            !recentNotes.some(rn => rn._id === note._id || rn.id === note.id)
+        )
+        .slice(0, 5);
 
     // Check authentication and redirect if not logged in
     useEffect(() => {
@@ -48,7 +80,8 @@ function Notes() {
         }
     }, [status, router]);
 
-    const fetchNotes = useCallback(async () => {
+    // Fetch API notes based on search params
+    const fetchApiNotes = useCallback(async () => {
         if (!session?.user?.id) return;
 
         try {
@@ -103,27 +136,7 @@ function Notes() {
             const data = await response.json();
             const notesData = data.notes; // Access the 'notes' array from the API response
             setNotes(notesData);
-
-            // Process notes after fetching
-            const pinned = notesData.filter((note: NoteListItem) => note.isPinned);
-            setPinnedNotes(pinned);
-
-            // Find recent notes that are not pinned
-            const recent = notesData
-                .filter((note: NoteListItem) => !note.isPinned)
-                .sort((a: NoteListItem, b: NoteListItem) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())
-                .slice(0, 5);
-            setRecentNotes(recent);
-
-            // Find favorites that are not in pinned or recent
-            const favorites = notesData
-                .filter((note: NoteListItem) =>
-                    note.isFavorite &&
-                    !note.isPinned &&
-                    !recent.some((rn: NoteListItem) => rn._id === note._id))
-                .slice(0, 5);
-            setFavoriteNotes(favorites);
-
+            
             setError(null);
         } catch (err: any) {
             console.error("Error fetching notes:", err);
@@ -136,17 +149,29 @@ function Notes() {
     // Fetch notes on component mount and when session changes
     useEffect(() => {
         if (session?.user?.id) {
-            fetchNotes();
+            // If we're not in a filtered view, use the store's fetchNotes
+            // Otherwise use the API for filtered notes
+            if (searchParams.size === 0) {
+                fetchNotes(session.user.id);
+            } else {
+                fetchApiNotes();
+            }
         }
-    }, [session?.user?.id, fetchNotes]);
+    }, [session?.user?.id, fetchNotes, searchParams, fetchApiNotes]);
 
     // For refreshing notes after updates
     const refreshNotes = () => {
-        fetchNotes();
+        if (session?.user?.id) {
+            if (searchParams.size === 0) {
+                fetchNotes(session.user.id);
+            } else {
+                fetchApiNotes();
+            }
+        }
     };
 
     // Loading state
-    if (status === "loading" || loading) {
+    if (status === "loading" || (loading && !notes.length && storeLoading)) {
         return (
             <Container className="py-8">
                 <div className="flex justify-center items-center h-64">
@@ -164,15 +189,8 @@ function Notes() {
         return (
             <Container className="py-8">
                 <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
-                    <h2 className="text-lg font-medium mb-2">Error loading notes</h2>
+                    <h3 className="font-medium">Error loading notes</h3>
                     <p>{error}</p>
-                    <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={fetchNotes}
-                    >
-                        Try Again
-                    </Button>
                 </div>
             </Container>
         );
@@ -219,7 +237,7 @@ function Notes() {
                 </div>
             )}
 
-            {notes.length === 0 ? (
+            {notes.length === 0 && storeNotes.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}

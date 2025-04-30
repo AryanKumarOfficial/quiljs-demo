@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage, devtools } from 'zustand/middleware';
-import { produce } from 'immer';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 
 export interface INote {
   _id: string;
@@ -46,10 +47,11 @@ interface NotesState {
   clearNotes: () => void;
 }
 
+// Create store with middleware in the correct order
 export const useNotesStore = create<NotesState>()(
   devtools(
     persist(
-      (set, get) => ({
+      immer((set, get) => ({
         notes: [],
         loading: false,
         error: null,
@@ -60,37 +62,38 @@ export const useNotesStore = create<NotesState>()(
         sortBy: 'updated',
 
         fetchNotes: async (userId: string) => {
-          set(produce(state => {
+          set(state => {
             state.loading = true;
             state.error = null;
-          }));
+          });
           
           try {
             const response = await fetch(`/api/notes?userId=${userId}`);
-            const result = await response.json();
             
             if (!response.ok) {
-              throw new Error(result.error || 'Failed to fetch notes');
+              throw new Error(`Failed to fetch notes: ${response.status}`);
             }
             
-            set(produce(state => {
-              state.notes = result.data;
+            const result = await response.json();
+            
+            set(state => {
+              state.notes = result.notes || [];
               state.loading = false;
-            }));
+            });
           } catch (err) {
             console.error('Error fetching notes:', err);
-            set(produce(state => {
+            set(state => {
               state.error = err instanceof Error ? err.message : 'An error occurred while fetching notes';
               state.loading = false;
-            }));
+            });
           }
         },
 
         createNote: async (note: Partial<INote>, userId: string) => {
-          set(produce(state => {
+          set(state => {
             state.loading = true;
             state.error = null;
-          }));
+          });
           
           try {
             const response = await fetch('/api/notes', {
@@ -101,44 +104,46 @@ export const useNotesStore = create<NotesState>()(
               body: JSON.stringify({ ...note, userId }),
             });
 
-            const result = await response.json();
-            
             if (!response.ok) {
-              throw new Error(result.error || 'Failed to create note');
+              throw new Error(`Failed to create note: ${response.status}`);
             }
             
+            const result = await response.json();
             const newNote = result.data;
             
-            set(produce(state => {
+            set(state => {
               state.notes.push(newNote);
               state.loading = false;
               state.currentNote = newNote;
-            }));
+            });
             
             return newNote;
           } catch (err) {
             console.error('Error creating note:', err);
-            set(produce(state => {
+            set(state => {
               state.error = err instanceof Error ? err.message : 'An error occurred while creating note';
               state.loading = false;
-            }));
+            });
             return null;
           }
         },
 
         updateNote: async (id: string, updates: Partial<INote>) => {
+          // Make a backup of the note for rollback
+          const originalNote = get().notes.find(note => note._id === id || note.id === id);
+          
           // Optimistic update
-          set(produce(state => {
+          set(state => {
             state.loading = true;
             state.error = null;
             
             // Find and update the note in state
-            const noteIndex = state.notes.findIndex((note: INote) => note._id === id || note.id === id);
+            const noteIndex = state.notes.findIndex(note => note._id === id || note.id === id);
             if (noteIndex !== -1) {
               // Merge the updates with current note
               Object.assign(state.notes[noteIndex], updates);
             }
-          }));
+          });
 
           try {
             const response = await fetch(`/api/notes/${id}`, {
@@ -149,17 +154,16 @@ export const useNotesStore = create<NotesState>()(
               body: JSON.stringify(updates),
             });
 
-            const result = await response.json();
-            
             if (!response.ok) {
-              throw new Error(result.error || 'Failed to update note');
+              throw new Error(`Failed to update note: ${response.status}`);
             }
             
+            const result = await response.json();
             const updatedNote = result.data;
             
-            set(produce(state => {
+            set(state => {
               // Update state with server response
-              const noteIndex = state.notes.findIndex((note: INote) => note._id === id || note.id === id);
+              const noteIndex = state.notes.findIndex(note => note._id === id || note.id === id);
               if (noteIndex !== -1) {
                 state.notes[noteIndex] = updatedNote;
               }
@@ -170,134 +174,147 @@ export const useNotesStore = create<NotesState>()(
               }
               
               state.loading = false;
-            }));
+            });
             
             return updatedNote;
           } catch (err) {
             console.error('Error updating note:', err);
             
             // Revert the optimistic update on error
-            set(produce(state => {
+            set(state => {
               state.error = err instanceof Error ? err.message : 'An error occurred while updating note';
               state.loading = false;
-              // Reload notes to revert changes (could be optimized by keeping a backup)
-              // This is a simple solution but not optimal for performance
-            }));
+              
+              // Revert the change using the backup if available
+              if (originalNote) {
+                const noteIndex = state.notes.findIndex(note => note._id === id || note.id === id);
+                if (noteIndex !== -1) {
+                  state.notes[noteIndex] = originalNote;
+                }
+                
+                // Revert current note if applicable
+                if (state.currentNote && (state.currentNote._id === id || state.currentNote.id === id)) {
+                  state.currentNote = originalNote;
+                }
+              }
+            });
             
             return null;
           }
         },
 
         deleteNote: async (id: string) => {
-          let deletedNote: INote | undefined;
+          // Make a backup of the note and its position for rollback
+          const originalNote = get().notes.find(note => note._id === id || note.id === id);
+          const noteIndex = get().notes.findIndex(note => note._id === id || note.id === id);
           
           // Optimistic delete
-          set(produce(state => {
+          set(state => {
             state.loading = true;
             state.error = null;
             
-            // Find and keep a copy of the note before removing it
-            deletedNote = state.notes.find((note: INote) => note._id === id || note.id === id);
-            
             // Remove from notes array
-            state.notes = state.notes.filter((note: INote) => note._id !== id && note.id !== id);
+            state.notes = state.notes.filter(note => note._id !== id && note.id !== id);
             
             // Clear current note if it's the one being deleted
             if (state.currentNote && (state.currentNote._id === id || state.currentNote.id === id)) {
               state.currentNote = null;
             }
-          }));
+          });
 
           try {
             const response = await fetch(`/api/notes/${id}`, {
               method: 'DELETE',
             });
 
-            const result = await response.json();
-            
             if (!response.ok) {
-              throw new Error(result.error || 'Failed to delete note');
+              throw new Error(`Failed to delete note: ${response.status}`);
             }
             
-            set(produce(state => {
+            set(state => {
               state.loading = false;
-            }));
+            });
             
             return true;
           } catch (err) {
             console.error('Error deleting note:', err);
             
             // Restore the deleted note on error
-            set(produce(state => {
+            set(state => {
               state.error = err instanceof Error ? err.message : 'An error occurred while deleting note';
               state.loading = false;
               
-              // Restore the deleted note
-              if (deletedNote) {
-                state.notes.push(deletedNote);
+              // Restore the deleted note if backup exists
+              if (originalNote && noteIndex !== -1) {
+                state.notes.splice(noteIndex, 0, originalNote);
               }
-            }));
+            });
             
             return false;
           }
         },
 
-        setCurrentNote: (note: INote | null) => set(produce(state => {
+        setCurrentNote: (note: INote | null) => set(state => {
           state.currentNote = note;
-        })),
+        }),
         
         toggleFavorite: async (id: string) => {
           const note = get().notes.find(n => n._id === id || n.id === id);
-          if (note) {
-            const updatedIsFavorite = !note.isFavorite;
-            await get().updateNote(id, { isFavorite: updatedIsFavorite });
-          }
+          if (!note) return;
+          
+          const updatedIsFavorite = !note.isFavorite;
+          await get().updateNote(id, { isFavorite: updatedIsFavorite });
         },
 
         togglePinned: async (id: string) => {
           const note = get().notes.find(n => n._id === id || n.id === id);
-          if (note) {
-            const updatedIsPinned = !note.isPinned;
-            await get().updateNote(id, { isPinned: updatedIsPinned });
-          }
+          if (!note) return;
+          
+          const updatedIsPinned = !note.isPinned;
+          await get().updateNote(id, { isPinned: updatedIsPinned });
         },
 
         togglePublic: async (id: string) => {
           const note = get().notes.find(n => n._id === id || n.id === id);
-          if (note) {
-            const updatedIsPublic = !note.isPublic;
-            await get().updateNote(id, { isPublic: updatedIsPublic });
-          }
+          if (!note) return;
+          
+          const updatedIsPublic = !note.isPublic;
+          await get().updateNote(id, { isPublic: updatedIsPublic });
         },
 
-        setSearchQuery: (query: string) => set(produce(state => {
+        setSearchQuery: (query: string) => set(state => {
           state.searchQuery = query;
-        })),
+        }),
         
-        setActiveFolder: (folder: string) => set(produce(state => {
+        setActiveFolder: (folder: string) => set(state => {
           state.activeFolder = folder;
-        })),
+        }),
         
-        setActiveTags: (tags: string[]) => set(produce(state => {
+        setActiveTags: (tags: string[]) => set(state => {
           state.activeTags = tags;
-        })),
+        }),
         
-        setSortBy: (sort: 'updated' | 'title' | 'created') => set(produce(state => {
+        setSortBy: (sort: 'updated' | 'title' | 'created') => set(state => {
           state.sortBy = sort;
-        })),
+        }),
         
-        clearNotes: () => set(produce(state => {
+        clearNotes: () => set(state => {
           state.notes = [];
           state.currentNote = null;
-        })),
-      }),
+        }),
+      })),
       {
         name: 'notes-storage',
-        storage: createJSONStorage(() => sessionStorage), // Using sessionStorage to persist data during a browser session
+        storage: createJSONStorage(() => sessionStorage),
+        partialize: (state) => ({
+          // Only persist these fields
+          notes: state.notes,
+          activeFolder: state.activeFolder,
+          activeTags: state.activeTags,
+          sortBy: state.sortBy,
+        }),
       }
     ),
-    {
-      name: 'Notes Store',
-    }
+    { name: 'NotesStore' }
   )
 );

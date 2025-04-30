@@ -4,6 +4,7 @@ import { FormEvent, useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
+import { signIn } from 'next-auth/react';
 
 function Register() {
   const router = useRouter();
@@ -13,14 +14,53 @@ function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
 
-  // Check for redirects from login page
+  // Check for redirects
   useEffect(() => {
     const redirectReason = searchParams.get('redirect');
     if (redirectReason === 'required') {
       toast.error('Please register or login to access this page');
     }
   }, [searchParams]);
+
+  // Check password strength
+  useEffect(() => {
+    if (!password) {
+      setPasswordStrength(0);
+      return;
+    }
+
+    // Calculate password strength
+    let strength = 0;
+    // Length check
+    if (password.length >= 8) strength += 1;
+    // Contains uppercase
+    if (/[A-Z]/.test(password)) strength += 1;
+    // Contains lowercase
+    if (/[a-z]/.test(password)) strength += 1;
+    // Contains number
+    if (/[0-9]/.test(password)) strength += 1;
+    // Contains special character
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+
+    setPasswordStrength(strength);
+  }, [password]);
+
+  const getPasswordStrengthLabel = () => {
+    if (!password) return "";
+    if (passwordStrength <= 1) return "Weak";
+    if (passwordStrength <= 3) return "Medium";
+    return "Strong";
+  };
+
+  const getPasswordStrengthColor = () => {
+    if (!password) return "bg-gray-200";
+    if (passwordStrength <= 1) return "bg-red-500";
+    if (passwordStrength <= 3) return "bg-yellow-500";
+    return "bg-green-500";
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -37,6 +77,12 @@ function Register() {
 
     if (password.length < 8) {
       toast.error('Password must be at least 8 characters long');
+      return;
+    }
+
+    // Additional password strength validation
+    if (passwordStrength <= 1) {
+      toast.error('Password is too weak. Include uppercase, lowercase, numbers, and special characters.');
       return;
     }
 
@@ -69,6 +115,20 @@ function Register() {
       console.error('Registration error:', err);
       toast.error(err.message || 'An error occurred during registration');
     } finally {
+      setLoading(false);
+    }
+  };
+
+  // OAuth sign-in handler
+  const handleOAuthSignIn = async (provider: string) => {
+    try {
+      setLoading(true);
+      const loadingToast = toast.loading(`Signing in with ${provider}...`);
+      await signIn(provider, { callbackUrl });
+      toast.dismiss(loadingToast);
+    } catch (err) {
+      console.error(`${provider} login error:`, err);
+      toast.error(`An error occurred during ${provider} login`);
       setLoading(false);
     }
   };
@@ -135,6 +195,10 @@ function Register() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Password (min 8 characters)"
               />
+              <div className="mt-1 flex items-center">
+                <div className={`h-2 w-1/3 rounded ${getPasswordStrengthColor()}`}></div>
+                <div className="ml-2 text-sm text-gray-600">{getPasswordStrengthLabel()}</div>
+              </div>
             </div>
 
             <div>
@@ -171,6 +235,24 @@ function Register() {
           <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
             Sign in
           </Link>
+        </div>
+
+        <div className="mt-6">
+          <p className="text-center text-sm text-gray-600">Or sign in with</p>
+          <div className="mt-4 flex justify-center space-x-4">
+            <button
+              onClick={() => handleOAuthSignIn('google')}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Google
+            </button>
+            <button
+              onClick={() => handleOAuthSignIn('github')}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              GitHub
+            </button>
+          </div>
         </div>
       </div>
     </div>
