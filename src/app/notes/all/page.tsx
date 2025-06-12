@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useContext } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -12,11 +12,14 @@ import NotesList from "@/components/NotesList";
 import { FiFilter, FiSearch, FiFolder, FiTag, FiChevronDown, FiPlus, FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { PageHeader } from "@/components/PageHeader";
+import { SidebarToggleContext } from "@/context/SidebarToggleContext";
 
 function AllNotes() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const isLoading = status === "loading";
+  const { toggleSidebar } = useContext(SidebarToggleContext);
 
   const [notes, setNotes] = useState<any[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
@@ -112,49 +115,41 @@ function AllNotes() {
 
   return (
     <Container className="py-8">
-      <motion.div
-        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">All Notes</h1>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <motion.div
-            className="relative"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
+      <PageHeader title="All Notes" toggleSidebar={toggleSidebar}>
+        <motion.div
+          className="relative"
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.2 }}
+        >
+          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search notes..."
+            className="pl-10 pr-4 py-2 border rounded-md w-full sm:w-64 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+          />
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
           >
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search notes..."
-              className="pl-10 pr-4 py-2 border rounded-md w-full sm:w-64 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+            <FiFilter className={isFiltersOpen ? "text-blue-600" : ""} /> Filters
+            <FiChevronDown
+              className={`transition-transform duration-300 ${isFiltersOpen ? "rotate-180 text-blue-600" : ""}`}
             />
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2"
-              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-            >
-              <FiFilter className={isFiltersOpen ? "text-blue-600" : ""} /> Filters
-              <FiChevronDown
-                className={`transition-transform duration-300 ${isFiltersOpen ? "rotate-180 text-blue-600" : ""}`}
-              />
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Link href="/notes/new">
+            <Button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200">
+              <FiPlus /> New Note
             </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link href="/notes/new">
-              <Button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200">
-                <FiPlus /> New Note
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-      </motion.div>
+          </Link>
+        </motion.div>
+      </PageHeader>
 
       <AnimatePresence>
         {isFiltersOpen && (

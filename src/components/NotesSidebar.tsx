@@ -3,10 +3,14 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiTag, FiFilter, FiStar, FiPaperclip, FiClock, FiChevronDown, FiChevronUp, FiX, FiFolder } from "react-icons/fi";
+import { FiTag, FiFilter, FiStar, FiPaperclip, FiClock, FiChevronDown, FiChevronUp, FiX, FiFolder, FiArrowLeft } from "react-icons/fi";
 import { showToast } from "@/lib/utils";
 
-function NotesSidebarComponent() {
+export interface NotesSidebarProps {
+  toggleSidebarRef?: React.MutableRefObject<(() => void) | null>;
+}
+
+function NotesSidebarComponent({ toggleSidebarRef }: NotesSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -22,12 +26,42 @@ function NotesSidebarComponent() {
   const [folders, setFolders] = useState<string[]>([]);
   const [isLoadingFolders, setIsLoadingFolders] = useState(true);
   const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
+  const [isMobileVisible, setIsMobileVisible] = useState(false);
 
-  // Get current filters from URL
-  const currentTagFilter = searchParams?.get('tag') || null;
-  const currentFolderFilter = searchParams?.get('folder') || null;
+  // Calculate total notes with better null check
+  const totalNotes = (() => {
+    if (!folderCounts || typeof folderCounts !== 'object') return 0;
+    return Object.values(folderCounts).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0);
+  })();
 
-  // Fetch all available tags
+  // Safe search params access
+  const getSearchParam = (key: string): string | null => {
+    try {
+      return searchParams?.get(key) || null;
+    } catch (error) {
+      console.error(`Error accessing search param ${key}:`, error);
+      return null;
+    }
+  };
+
+  const currentTagFilter = getSearchParam('tag');
+  const currentFolderFilter = getSearchParam('folder');
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setIsMobileVisible(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    setIsMobileVisible(false);
+  }, [pathname, searchParams]);
+
   useEffect(() => {
     async function fetchTags() {
       try {
@@ -47,7 +81,6 @@ function NotesSidebarComponent() {
     fetchTags();
   }, []);
 
-  // Fetch all available folders
   useEffect(() => {
     async function fetchFolders() {
       try {
@@ -67,32 +100,28 @@ function NotesSidebarComponent() {
     fetchFolders();
   }, []);
 
-  // Fetch folder counts
   useEffect(() => {
+    // Add error handling for folder counts
     async function fetchFolderCounts() {
       try {
         const response = await fetch("/api/notes/folder-counts");
         if (!response.ok) throw new Error("Failed to fetch folder counts");
 
         const data = await response.json();
-        console.log("Folder counts received:", data.counts); // Debug log
         setFolderCounts(data.counts || {});
       } catch (error) {
         console.error("Error fetching folder counts:", error);
+        setFolderCounts({}); // Set empty object on error
       }
     }
 
-    // Don't wait for folders to be loaded before fetching counts
-    // This ensures we get counts even when folder list might be cached
     fetchFolderCounts();
 
-    // Set up a refresh interval to periodically update folder counts
-    const intervalId = setInterval(fetchFolderCounts, 30000); // Every 30 seconds
+    const intervalId = setInterval(fetchFolderCounts, 30000);
 
     return () => clearInterval(intervalId);
-  }, []); // Run once on component mount
+  }, []);
 
-  // Toggle section expanded state
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -100,50 +129,96 @@ function NotesSidebarComponent() {
     }));
   };
 
-  // Create a URL for filtering
-  const createFilterUrl = (param: string, value: string) => {
-    const params = new URLSearchParams(searchParams?.toString() || "");
-    params.set(param, value);
-    return `${pathname}?${params.toString()}`;
-  };
-
-  // Apply filter directly without using Link component
   const applyFilter = (param: string, value: string) => {
-    const params = new URLSearchParams(searchParams?.toString() || "");
-    params.set(param, value);
-    router.push(`${pathname}?${params.toString()}`);
-  };
-
-  // Clear a specific filter
-  const clearFilter = (param: string) => {
-    const params = new URLSearchParams(searchParams?.toString() || "");
-    params.delete(param);
-    router.push(`${pathname}?${params.toString()}`);
-  };
-
-  // Check if a view is active
-  const isViewActive = (view: string) => {
-    if (view === 'all' && pathname.includes('/notes/all')) return true;
-    if (view === 'favorites' && searchParams?.get('isFavorite') === 'true') return true;
-    if (view === 'pinned' && searchParams?.get('isPinned') === 'true') return true;
-    if (view === 'recent' && searchParams?.get('sort') === '-lastAccessed') return true;
-    return false;
-  };
-
-  // Handle folder click
-  const handleFolderClick = (folderName: string) => {
-    if (folderName === "All Notes") {
+    try {
+      // Create a fresh URLSearchParams object from the current URL search params
       const params = new URLSearchParams(searchParams?.toString() || "");
-      params.delete('folder');
-      router.push(`${pathname}?${params.toString()}`);
-    } else {
-      applyFilter('folder', folderName);
+
+      // Set the new parameter
+      params.set(param, value);
+
+      // Use the correct route based on current page
+      if (pathname?.includes('/notes/all')) {
+        // For /notes/all page
+        router.push(`/notes/all?${params.toString()}`);
+      } else {
+        // For other notes pages (mainly /notes)
+        router.push(`/notes?${params.toString()}`);
+      }
+    } catch (error) {
+      console.error(`Error applying filter ${param}=${value}:`, error);
+      showToast.error("Failed to apply filter. Please try again.");
     }
   };
 
-  return (
-    <div className="w-64 border-r p-4 bg-white">
-      {/* Views Section */}
+  const clearFilter = (param: string) => {
+    try {
+      // Create a fresh URLSearchParams object from the current URL search params
+      const params = new URLSearchParams(searchParams?.toString() || "");
+
+      // Remove the parameter
+      params.delete(param);
+
+      // Use the correct route based on current page
+      if (pathname?.includes('/notes/all')) {
+        router.push(`/notes/all?${params.toString()}`);
+      } else {
+        router.push(`/notes?${params.toString()}`);
+      }
+    } catch (error) {
+      console.error(`Error clearing filter ${param}:`, error);
+      showToast.error("Failed to clear filter. Please try again.");
+    }
+  };
+
+  const isViewActive = (view: string) => {
+    try {
+      if (view === 'all' && pathname?.includes('/notes/all')) return true;
+      if (view === 'favorites' && getSearchParam('isFavorite') === 'true') return true;
+      if (view === 'pinned' && getSearchParam('isPinned') === 'true') return true;
+      if (view === 'recent' && getSearchParam('sort') === '-lastAccessed') return true;
+      return false;
+    } catch (error) {
+      console.error("Error in isViewActive:", error);
+      return false;
+    }
+  };
+
+  const handleFolderClick = (folderName: string) => {
+    if (folderName === "All Notes") {
+      // For "All Notes", remove the folder parameter
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.delete('folder');
+
+      // Keep the same base path
+      if (pathname.includes('/notes/all')) {
+        router.push(`/notes/all?${params.toString()}`);
+      } else {
+        router.push(`/notes?${params.toString()}`);
+      }
+    } else {
+      // For specific folders, use the applyFilter function
+      applyFilter('folder', folderName);
+    }
+
+    // Close sidebar on mobile after navigation
+    if (window.innerWidth < 768) {
+      setIsMobileVisible(false);
+    }
+  };
+
+  const toggleMobileSidebar = () => {
+    setIsMobileVisible(!isMobileVisible);
+  };
+
+  useEffect(() => {
+    if (toggleSidebarRef) {
+      toggleSidebarRef.current = toggleMobileSidebar;
+    }
+  }, [toggleSidebarRef]);
+
+  const SidebarContent = () => (
+    <>
       <div className="mb-6">
         <div
           className="flex justify-between items-center mb-2 cursor-pointer"
@@ -201,7 +276,6 @@ function NotesSidebarComponent() {
         </AnimatePresence>
       </div>
 
-      {/* Folders Section */}
       <div className="mb-6">
         <div
           className="flex justify-between items-center mb-2 cursor-pointer"
@@ -238,7 +312,7 @@ function NotesSidebarComponent() {
                       <span>All Notes</span>
                     </div>
                     <span className="text-xs text-gray-500">
-                      {Object.values(folderCounts).reduce((a, b) => a + b, 0)}
+                      {totalNotes}
                     </span>
                   </div>
                   {folders.length > 0 ? (
@@ -262,7 +336,6 @@ function NotesSidebarComponent() {
                 </div>
               )}
 
-              {/* Clear folder filter if one is applied */}
               {currentFolderFilter && (
                 <button
                   onClick={() => clearFilter('folder')}
@@ -276,7 +349,6 @@ function NotesSidebarComponent() {
         </AnimatePresence>
       </div>
 
-      {/* Tags Section */}
       <div className="mb-6">
         <div
           className="flex justify-between items-center mb-2 cursor-pointer"
@@ -319,7 +391,6 @@ function NotesSidebarComponent() {
                 <p className="text-sm text-gray-500 pl-2">No tags found</p>
               )}
 
-              {/* Clear tag filter if one is applied */}
               {currentTagFilter && (
                 <button
                   onClick={() => clearFilter('tag')}
@@ -333,7 +404,6 @@ function NotesSidebarComponent() {
         </AnimatePresence>
       </div>
 
-      {/* Filters Section */}
       <div className="mb-6">
         <div
           className="flex justify-between items-center mb-2 cursor-pointer"
@@ -361,19 +431,7 @@ function NotesSidebarComponent() {
                   <span className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full text-[10px] mr-2">R</span>
                   Rich Text Notes
                 </div>
-                <div
-                  onClick={() => applyFilter('editorType', 'markdown')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${searchParams?.get('editorType') === 'markdown' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                >
-                  <span className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full text-[10px] mr-2">M</span>
-                  Markdown Notes
-                </div>
-                <div
-                  onClick={() => applyFilter('editorType', 'simple')}
-                  className={`flex items-center py-1 px-2 text-sm rounded-md cursor-pointer ${searchParams?.get('editorType') === 'simple' ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                >
+                <div>
                   <span className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full text-[10px] mr-2">T</span>
                   Plain Text Notes
                 </div>
@@ -403,7 +461,6 @@ function NotesSidebarComponent() {
                 </div>
               </div>
 
-              {/* Clear filter button */}
               {(searchParams?.has('editorType') || searchParams?.has('isPublic') || searchParams?.has('hasShares')) && (
                 <button
                   onClick={() => {
@@ -420,7 +477,56 @@ function NotesSidebarComponent() {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar - always visible on md screens and larger */}
+      <div className="hidden md:block md:w-64 border-r p-4 bg-white h-full overflow-y-auto">
+        <SidebarContent />
+      </div>
+
+      {/* Mobile sidebar - conditionally visible */}
+      <AnimatePresence>
+        {isMobileVisible && (
+          <>
+            {/* Backdrop/overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black z-40 md:hidden"
+              onClick={toggleMobileSidebar}
+            />
+
+            {/* Slide-in sidebar */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed top-0 left-0 z-50 w-64 md:hidden h-full bg-white shadow-lg overflow-y-auto"
+            >
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="font-semibold">Notes</h2>
+                  <button
+                    onClick={toggleMobileSidebar}
+                    className="p-1 rounded hover:bg-gray-100"
+                    aria-label="Close Sidebar"
+                  >
+                    <FiArrowLeft size={20} />
+                  </button>
+                </div>
+                <SidebarContent />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -435,10 +541,10 @@ function LoadingSkeleton() {
   );
 }
 
-export default function NotesSidebar() {
+export default function NotesSidebar({ toggleSidebarRef }: NotesSidebarProps) {
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <NotesSidebarComponent />
+      <NotesSidebarComponent toggleSidebarRef={toggleSidebarRef} />
     </Suspense>
   );
 }
