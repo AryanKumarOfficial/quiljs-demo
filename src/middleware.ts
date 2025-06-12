@@ -1,89 +1,123 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import type {NextRequest} from 'next/server';
+import {NextResponse} from 'next/server';
+import {getToken} from 'next-auth/jwt';
 
-// List of routes that don't require authentication
-const publicPaths = ['/', '/login', '/register', '/api/auth', '/api/register'];
+// Public paths configuration
+const PUBLIC_PATHS = new Set([
+    '/',
+    '/login',
+    '/register',
+    '/terms',
+    '/privacy'
+]);
+
+const PUBLIC_API_PREFIXES = [
+    '/api/auth',
+    '/api/register',
+    '/api/public'
+];
+
+const STATIC_FILE_REGEX = /\.(js|css|ico|png|jpg|jpeg|svg|webp|woff2)$/;
 
 export async function middleware(request: NextRequest) {
-  // Get the pathname from the URL
-  const { pathname } = request.nextUrl;
-  
-  // Check if the path is public (no auth needed)
-  const isPublicPath = publicPaths.some(path => 
-    pathname === path || 
-    pathname.startsWith('/api/auth/') ||
-    pathname.startsWith('/api/register')
-  );
+    const {pathname} = request.nextUrl;
 
-  // Skip auth check for public paths and static assets
-  if (isPublicPath || pathname.match(/\.(js|css|ico|png|jpg|svg|webp)$/)) {
-    return NextResponse.next();
-  }
+    // Skip middleware for static files and public paths
+    if (
+        STATIC_FILE_REGEX.test(pathname) ||
+        PUBLIC_PATHS.has(pathname) ||
+        PUBLIC_API_PREFIXES.some(prefix => pathname.startsWith(prefix))
+    ) {
+        return NextResponse.next();
+    }
 
-  try {
-    // Verify authentication token
-    const token = await getToken({ 
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET 
-    });
+    try {
+        const token = await getToken({
+            req: request,
+            secret: process.env.NEXTAUTH_SECRET,
+            secureCookie: process.env.NODE_ENV === 'production'
+        });
 
-    // If no token and trying to access a protected route
-    if (!token) {
-      // Return 401 Unauthorized for API routes
-      if (pathname.startsWith('/api')) {
-        return NextResponse.json(
-          { error: 'Authentication required', code: 'auth_required' }, 
-          { status: 401 }
-        );
-      }
-      
-      // Redirect to login for page routes with a reason
-      const url = new URL('/login', request.url);
-      url.searchParams.set('callbackUrl', encodeURI(request.url));
-      url.searchParams.set('reason', 'unauthenticated');
-      return NextResponse.redirect(url);
+        // Handle missing token
+        if (!token) {
+            return handleUnauthenticated(request, pathname);
+        }
+
+        // Handle expired token
+        if (isTokenExpired(token)) {
+            return handleTokenExpired(request, pathname);
+        }
+
+        // Authenticated request - add security headers
+        const response = NextResponse.next();
+        setSecurityHeaders(response);
+        return response;
+
+    } catch (error) {
+        console.error('Authentication Error:', error);
+        return handleAuthError(request, pathname);
     }
-    
-    // Check for token expiration (optional additional check)
-    const tokenExpiry = token.exp as number | undefined;
-    if (tokenExpiry && Date.now() >= tokenExpiry * 1000) {
-      if (pathname.startsWith('/api')) {
-        return NextResponse.json(
-          { error: 'Session expired', code: 'session_expired' },
-          { status: 401 }
-        );
-      }
-      
-      const url = new URL('/login', request.url);
-      url.searchParams.set('callbackUrl', encodeURI(request.url));
-      url.searchParams.set('reason', 'expired');
-      return NextResponse.redirect(url);
-    }
-    
-    // User is authenticated, continue
-    return NextResponse.next();
-    
-  } catch (error) {
-    console.error('Auth middleware error:', error);
-    
-    // Handle errors gracefully
-    if (pathname.startsWith('/api')) {
-      return NextResponse.json(
-        { error: 'Authentication error', code: 'auth_error' }, 
-        { status: 500 }
-      );
-    }
-    
-    // Redirect to login on auth errors
-    const url = new URL('/login', request.url);
-    url.searchParams.set('reason', 'error');
-    return NextResponse.redirect(url);
-  }
 }
 
-// Configure matcher for routes that should be checked
+// Helper functions
+function isTokenExpired(token: any): boolean {
+    return token.exp && (Date.now() >= token.exp * 1000);
+}
+
+function handleUnauthenticated(request: NextRequest, pathname: string) {
+    if (pathname.startsWith('/api')) {
+        return NextResponse.json(
+            {error: 'Authentication required', code: 'UNAUTHORIZED'},
+            {status: 401}
+        );
+    }
+
+    return redirectToLogin(request, 'unauthenticated');
+}
+
+function handleTokenExpired(request: NextRequest, pathname: string) {
+    if (pathname.startsWith('/api')) {
+        return NextResponse.json(
+            {error: 'Session expired', code: 'SESSION_EXPIRED'},
+            {status: 401}
+        );
+    }
+
+    return redirectToLogin(request, 'session_expired');
+}
+
+function handleAuthError(request: NextRequest, pathname: string) {
+    if (pathname.startsWith('/api')) {
+        return NextResponse.json(
+            {error: 'Authentication service unavailable', code: 'AUTH_SERVICE_ERROR'},
+            {status: 503}
+        );
+    }
+
+    return redirectToLogin(request, 'error');
+}
+
+function redirectToLogin(request: NextRequest, reason: string) {
+    const url = new URL('/login', request.url);
+    url.searchParams.set('callbackUrl', request.nextUrl.pathname);
+    url.searchParams.set('reason', reason);
+    return NextResponse.redirect(url);
+}
+
+function setSecurityHeaders(response: NextResponse) {
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set(
+        'Permissions-Policy',
+        'camera=(), microphone=(), geolocation=(), payment=()'
+    );
+    return response;
+}
+
 export const config = {
-  // Check all paths except static files
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+    matcher: [
+        '/((?!_next/static|_next/image|favicon.ico).*)',
+        '/api/:path*'
+    ]
 };
