@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useState, Suspense, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import {Suspense, useCallback, useEffect, useState} from "react";
+import {useSession} from "next-auth/react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import NotesList from "@/components/NotesList";
-import { Button } from "@/components/ui/button";
-import { FiPlus, FiFileText, FiFilter, FiFolder } from "react-icons/fi";
-import { Container } from "@/components/ui/container";
-import { motion } from "framer-motion";
-import { useNotesStore } from "@/store/notesStore";
+import {Button} from "@/components/ui/button";
+import {FiFileText, FiFilter, FiPlus} from "react-icons/fi";
+import {Container} from "@/components/ui/container";
+import {motion} from "framer-motion";
+import {useNotesStore} from "@/store/notesStore";
 
-// Define a type that matches what NotesList expects
-type NoteListItem = {
+// Simplified type for frontend use (without Mongoose methods)
+type NoteData = {
     id: string;
-    _id: string;
+    _id: string; // Mongoose ID
     title: string;
     content: string;
     tags: string[];
@@ -30,46 +30,31 @@ type NoteListItem = {
 };
 
 function Notes() {
-    const { data: session, status } = useSession();
+    const {data: session, status} = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
-    
-    // Get notes data directly from the store and listen for changes
-    const { notes: storeNotes = [], loading: storeLoading, fetchNotes } = useNotesStore();
-    
-    const [notes, setNotes] = useState<NoteListItem[]>([]);
+
+    const {notes: storeNotes = [], loading: storeLoading, fetchNotes} = useNotesStore();
+
+    const [notes, setNotes] = useState<NoteData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [filteredView, setFilteredView] = useState<boolean>(false);
     const [filterDescription, setFilterDescription] = useState<string>("");
 
-    // Derived state from store data - recalculated whenever store notes change
-    const pinnedNotes = (storeNotes || []).filter((note): note is NoteListItem => 
-        note !== undefined && note !== null && typeof note === 'object' && 'isPinned' in note && note.isPinned === true
-    );
-    
+    // Derived state from store data
+    const pinnedNotes = (storeNotes || []).filter(note => note.isPinned === true);
     const recentNotes = (storeNotes || [])
-        .filter((note): note is NoteListItem => 
-            note !== undefined && note !== null && typeof note === 'object' && 
-            'isPinned' in note && note.isPinned === false &&
-            'lastAccessed' in note && typeof note.lastAccessed === 'string'
+        .filter(note => !note.isPinned)
+        .sort((a, b) =>
+            new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
         )
-        .sort((a, b) => {
-            try {
-                return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
-            } catch (err) {
-                return 0;
-            }
-        })
         .slice(0, 5);
-    
     const favoriteNotes = (storeNotes || [])
-        .filter((note): note is NoteListItem => 
-            note !== undefined && note !== null && typeof note === 'object' && 
-            'isFavorite' in note && note.isFavorite === true &&
-            'isPinned' in note && note.isPinned === false &&
-            '_id' in note && 'id' in note &&
-            !recentNotes.some(rn => rn._id === note._id || rn.id === note.id)
+        .filter(note =>
+            note.isFavorite &&
+            !note.isPinned &&
+            !recentNotes.some(rn => rn.id === note.id)
         )
         .slice(0, 5);
 
@@ -86,20 +71,14 @@ function Notes() {
 
         try {
             setLoading(true);
-
-            // Build URL with search params
             const apiUrl = new URL("/api/notes", window.location.origin);
-
-            // Add all search parameters from the current URL
             searchParams.forEach((value, key) => {
                 apiUrl.searchParams.append(key, value);
             });
 
-            // Check if we're in a filtered view
             const isFiltered = searchParams.size > 0;
             setFilteredView(isFiltered);
 
-            // Create a description of the filter
             if (isFiltered) {
                 const folder = searchParams.get('folder');
                 const tag = searchParams.get('tag');
@@ -126,20 +105,13 @@ function Notes() {
                 setFilterDescription("");
             }
 
-            // Fetch notes from API endpoint
             const response = await fetch(apiUrl);
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch notes");
-            }
+            if (!response.ok) throw new Error("Failed to fetch notes");
 
             const data = await response.json();
-            const notesData = data.notes; // Access the 'notes' array from the API response
-            setNotes(notesData);
-            
+            setNotes(data.notes);
             setError(null);
         } catch (err: any) {
-            console.error("Error fetching notes:", err);
             setError(err.message || "Failed to fetch notes");
         } finally {
             setLoading(false);
@@ -149,8 +121,6 @@ function Notes() {
     // Fetch notes on component mount and when session changes
     useEffect(() => {
         if (session?.user?.id) {
-            // If we're not in a filtered view, use the store's fetchNotes
-            // Otherwise use the API for filtered notes
             if (searchParams.size === 0) {
                 fetchNotes(session.user.id);
             } else {
@@ -158,17 +128,6 @@ function Notes() {
             }
         }
     }, [session?.user?.id, fetchNotes, searchParams, fetchApiNotes]);
-
-    // For refreshing notes after updates
-    const refreshNotes = () => {
-        if (session?.user?.id) {
-            if (searchParams.size === 0) {
-                fetchNotes(session.user.id);
-            } else {
-                fetchApiNotes();
-            }
-        }
-    };
 
     // Loading state
     if (status === "loading" || (loading && !notes.length && storeLoading)) {
@@ -200,28 +159,30 @@ function Notes() {
         <Container className="py-8">
             <motion.div
                 className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+                initial={{opacity: 0, y: -10}}
+                animate={{opacity: 1, y: 0}}
+                transition={{duration: 0.3}}
             >
                 <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                     {filteredView ? "Filtered Notes" : "My Notes"}
                 </h1>
                 <div className="flex flex-col sm:flex-row gap-2">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <motion.div whileHover={{scale: 1.05}} whileTap={{scale: 0.95}}>
                         <Link href="/notes/all">
                             <Button
                                 variant="outline"
                                 className="flex items-center gap-2"
                             >
-                                <FiFilter /> Browse All
+                                <FiFilter/> Browse All
                             </Button>
                         </Link>
                     </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <motion.div whileHover={{scale: 1.05}} whileTap={{scale: 0.95}}>
                         <Link href="/notes/new">
-                            <Button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200">
-                                <FiPlus /> New Note
+                            <Button
+                                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200"
+                            >
+                                <FiPlus/> New Note
                             </Button>
                         </Link>
                     </motion.div>
@@ -231,7 +192,7 @@ function Notes() {
             {filteredView && filterDescription && (
                 <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-md">
                     <p className="text-blue-700 text-sm flex items-center">
-                        <FiFilter className="mr-2" />
+                        <FiFilter className="mr-2"/>
                         {filterDescription}
                     </p>
                 </div>
@@ -239,18 +200,20 @@ function Notes() {
 
             {notes.length === 0 && storeNotes.length === 0 ? (
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
+                    initial={{opacity: 0, y: 20}}
+                    animate={{opacity: 1, y: 0}}
+                    transition={{duration: 0.4}}
                 >
                     <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                        <FiFileText size={64} className="mb-4" />
+                        <FiFileText size={64} className="mb-4"/>
                         <h2 className="text-xl font-medium mb-2">No notes yet</h2>
                         <p className="mb-4">Create your first note to get started</p>
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <motion.div whileHover={{scale: 1.05}} whileTap={{scale: 0.95}}>
                             <Link href="/notes/new">
-                                <Button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
-                                    <FiPlus /> Create a Note
+                                <Button
+                                    className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                                >
+                                    <FiPlus/> Create a Note
                                 </Button>
                             </Link>
                         </motion.div>
@@ -260,19 +223,21 @@ function Notes() {
                 <div className="space-y-8">
                     <div>
                         <h2 className="text-xl font-semibold mb-3">Results</h2>
-                        <Suspense fallback={<div>Loading notes...</div>}>
-                            <NotesList notes={notes} showViewToggle={true} />
-                        </Suspense>
+                        <NotesList notes={notes} showViewToggle={true}/>
                     </div>
 
                     <motion.div
-                        whileHover={{ scale: 1.02 }}
-                        transition={{ duration: 0.2 }}
+                        whileHover={{scale: 1.02}}
+                        transition={{duration: 0.2}}
                         className="inline-block"
                     >
-                        <Link href="/notes" className="flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 font-medium">
+                        <Link href="/notes"
+                              className="flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 font-medium"
+                        >
                             Clear filters and view all categories
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                 strokeLinejoin="round" className="ml-1">
                                 <path d="M5 12h14"></path>
                                 <path d="m12 5 7 7-7 7"></path>
                             </svg>
@@ -284,38 +249,36 @@ function Notes() {
                     {pinnedNotes.length > 0 && (
                         <div>
                             <h2 className="text-xl font-semibold mb-3">Pinned Notes</h2>
-                            <Suspense fallback={<div>Loading pinned notes...</div>}>
-                                <NotesList notes={pinnedNotes} showViewToggle={true} />
-                            </Suspense>
+                            <NotesList notes={pinnedNotes} showViewToggle={true}/>
                         </div>
                     )}
 
                     {recentNotes.length > 0 && (
                         <div>
                             <h2 className="text-xl font-semibold mb-3">Recent Notes</h2>
-                            <Suspense fallback={<div>Loading recent notes...</div>}>
-                                <NotesList notes={recentNotes} showViewToggle={true} />
-                            </Suspense>
+                            <NotesList notes={recentNotes} showViewToggle={true}/>
                         </div>
                     )}
 
                     {favoriteNotes.length > 0 && (
                         <div>
                             <h2 className="text-xl font-semibold mb-3">Favorite Notes</h2>
-                            <Suspense fallback={<div>Loading favorite notes...</div>}>
-                                <NotesList notes={favoriteNotes} showViewToggle={true} />
-                            </Suspense>
+                            <NotesList notes={favoriteNotes} showViewToggle={true}/>
                         </div>
                     )}
 
                     <motion.div
-                        whileHover={{ scale: 1.02 }}
-                        transition={{ duration: 0.2 }}
+                        whileHover={{scale: 1.02}}
+                        transition={{duration: 0.2}}
                         className="inline-block"
                     >
-                        <Link href="/notes/all" className="flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 font-medium">
+                        <Link href="/notes/all"
+                              className="flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 font-medium"
+                        >
                             View all notes
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                 strokeLinejoin="round" className="ml-1">
                                 <path d="M5 12h14"></path>
                                 <path d="m12 5 7 7-7 7"></path>
                             </svg>
@@ -342,8 +305,8 @@ function LoadingSkeleton() {
 
 export default function NotesPage() {
     return (
-        <Suspense fallback={<LoadingSkeleton />}>
-            <Notes />
+        <Suspense fallback={<LoadingSkeleton/>}>
+            <Notes/>
         </Suspense>
     );
 }

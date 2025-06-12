@@ -1,129 +1,137 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, Model, Document, Types } from 'mongoose';
+import validator from 'validator';
 
-export interface INote {
-  _id?: mongoose.Types.ObjectId | string;
-  id?: string;
-  title: string;
-  content: string;
-  tags: string[];
-  folder: string;
-  color: string;
-  isPinned: boolean;
-  isFavorite: boolean;
-  editorType: 'rich' | 'markdown' | 'simple';
-  userId: mongoose.Types.ObjectId | string;
-  isPublic: boolean;
-  sharedWith: string[]; // Store emails instead of IDs for easier lookups
-  lastAccessed: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
+// 1. Strongly typed interface with TypeScript improvements
+export interface INote extends Document {
+    title: string;
+    content: string;
+    tags: string[];
+    folder: string;
+    color: string;
+    isPinned: boolean;
+    isFavorite: boolean;
+    editorType: 'rich' | 'markdown' | 'simple';
+    userId: Types.ObjectId;
+    isPublic: boolean;
+    sharedWith: string[];
+    lastAccessed: Date;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
-const noteSchema = new Schema<INote>({
-  title: { 
-    type: String, 
-    required: [true, 'Title is required'],
-    trim: true,
-    maxlength: [100, 'Title cannot be more than 100 characters'],
-    minlength: [1, 'Title cannot be empty']
-  },
-  content: { 
-    type: String, 
-    default: ''
-  },
-  tags: { 
-    type: [String],
-    default: [],
-    validate: {
-      validator: function(tags: string[]) {
-        // Each tag should be between 1-20 characters and have at most 50 tags
-        return tags.every(tag => tag.length >= 1 && tag.length <= 20) && tags.length <= 50;
-      },
-      message: 'Tags must be between 1-20 characters and you can have at most 50 tags'
-    }
-  },
-  folder: {
-    type: String,
-    default: 'Default',
-    trim: true,
-    maxlength: [30, 'Folder name cannot be more than 30 characters']
-  },
-  color: {
-    type: String,
-    default: '#ffffff',
-    validate: {
-      validator: function(color: string) {
-        // Either a hex color code or predefined color name
-        return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color) || 
-               ['white', 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'gray'].includes(color);
-      },
-      message: 'Invalid color format'
-    }
-  },
-  isPinned: {
-    type: Boolean,
-    default: false
-  },
-  isFavorite: {
-    type: Boolean,
-    default: false
-  },
-  editorType: { 
-    type: String, 
-    enum: {
-      values: ['rich', 'markdown', 'simple'],
-      message: 'Invalid editor type, must be rich, markdown, or simple'
+// 2. Enhanced schema with robust validation and indexes
+const noteSchema = new Schema<INote>(
+    {
+        title: {
+            type: String,
+            required: [true, 'Title is required'],
+            trim: true,
+            maxlength: [100, 'Title cannot exceed 100 characters'],
+            minlength: [1, 'Title cannot be empty']
+        },
+        content: {
+            type: String,
+            default: ''
+        },
+        tags: {
+            type: [String],
+            default: [],
+            validate: [
+                {
+                    validator: (tags: string[]) => tags.length <= 50,
+                    message: 'Cannot have more than 50 tags'
+                },
+                {
+                    validator: (tags: string[]) =>
+                        tags.every(tag => tag.length >= 1 && tag.length <= 20),
+                    message: 'Tags must be 1-20 characters'
+                }
+            ]
+        },
+        folder: {
+            type: String,
+            default: 'Default',
+            trim: true,
+            maxlength: [30, 'Folder name cannot exceed 30 characters']
+        },
+        color: {
+            type: String,
+            default: '#ffffff',
+            validate: {
+                validator: (color: string) =>
+                    /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color) ||
+                    ['white', 'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'indigo', 'purple', 'pink', 'gray'].includes(color.toLowerCase()),
+                message: 'Invalid color format - use hex code or predefined name'
+            }
+        },
+        isPinned: { type: Boolean, default: false },
+        isFavorite: { type: Boolean, default: false },
+        editorType: {
+            type: String,
+            enum: {
+                values: ['rich', 'markdown', 'simple'],
+                message: 'Invalid editor type. Use: rich, markdown, or simple'
+            },
+            default: 'rich'
+        },
+        userId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: [true, 'User ID is required'],
+            index: true
+        },
+        isPublic: { type: Boolean, default: false, index: true },
+        sharedWith: {
+            type: [String],
+            default: [],
+            validate: [
+                {
+                    validator: (emails: string[]) => emails.length <= 100,
+                    message: 'Cannot share with more than 100 users'
+                },
+                {
+                    validator: (emails: string[]) =>
+                        emails.every(email => validator.isEmail(email)),
+                    message: 'Invalid email format in sharedWith'
+                }
+            ]
+        },
+        lastAccessed: { type: Date, default: Date.now, index: true }
     },
-    default: 'rich'
-  },
-  userId: {
-    type: Schema.Types.ObjectId, 
-    ref: 'User',
-    required: [true, 'User ID is required'],
-    index: true
-  },
-  isPublic: {
-    type: Boolean,
-    default: false,
-    index: true
-  },
-  sharedWith: {
-    type: [String],
-    default: [],
-    validate: {
-      validator: function(emails: string[]) {
-        // Simple email validation for shared emails
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emails.every(email => emailRegex.test(email));
-      },
-      message: 'Invalid email format in sharedWith array'
+    {
+        timestamps: true,
+        toJSON: {
+            virtuals: true,
+            transform: (doc, ret) => {
+                ret.id = ret._id.toString();
+                delete ret._id;
+                delete ret.__v;
+                return ret;
+            }
+        },
+        toObject: { virtuals: true }
     }
-  },
-  lastAccessed: {
-    type: Date,
-    default: Date.now,
-    index: true // Index for sorting by recently accessed
-  }
+);
+
+// 3. Optimized indexes for common query patterns
+noteSchema.index({
+    title: 'text',
+    content: 'text',
+    tags: 'text'
 }, {
-  timestamps: true, // Automatically add createdAt and updatedAt
-  toJSON: {
-    virtuals: true,
-    transform: (_doc, ret) => {
-      ret.id = ret._id;
-      delete ret.__v;
-      return ret;
-    }
-  }
+    weights: { title: 3, tags: 2, content: 1 },
+    name: 'note_search_index'
 });
 
-// Indexes for efficient querying
-noteSchema.index({ title: 'text', content: 'text', tags: 'text' }); // Text search index
-noteSchema.index({ userId: 1, updatedAt: -1 }); // Most common query pattern
-noteSchema.index({ userId: 1, isPinned: -1 }); // For pinned notes queries
-noteSchema.index({ userId: 1, isFavorite: -1 }); // For favorite notes queries
-noteSchema.index({ userId: 1, folder: 1 }); // For folder-based filtering
+noteSchema.index({ userId: 1, updatedAt: -1 }); // Primary user feed
+noteSchema.index({ userId: 1, isPinned: -1, updatedAt: -1 });
+noteSchema.index({ userId: 1, isFavorite: -1, updatedAt: -1 });
+noteSchema.index({ userId: 1, folder: 1, updatedAt: -1 });
+noteSchema.index({ isPublic: 1, updatedAt: -1 }); // Public notes discovery
 
-// Create the model or get it if it exists
-const Note = mongoose.models.Note as mongoose.Model<INote> || mongoose.model<INote>('Note', noteSchema);
+// 4. Model creation with Next.js hot reload support
+const Note: Model<INote> =
+    mongoose.models?.Note as Model<INote> ||
+    mongoose.model<INote>('Note', noteSchema);
 
 export default Note;
