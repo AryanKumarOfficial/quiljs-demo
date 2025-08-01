@@ -4,7 +4,6 @@ import mongoose from "mongoose";
 import connectToDatabase from "@/lib/mongodb";
 import {authOptions} from "@/lib/auth";
 import Note from "@/models/Note";
-import React, {use} from "react";
 
 // Helper to validate MongoDB ID
 function isValidMongoId(id: string): boolean {
@@ -14,7 +13,7 @@ function isValidMongoId(id: string): boolean {
 // Get a specific note by ID
 export async function GET(
     req: NextRequest,
-    {params}: { params: Promise<{ id: string }> }
+    {params}: { params: { id: string } }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -25,7 +24,7 @@ export async function GET(
             );
         }
 
-        const {id} = React.use(params);
+        const {id} = params;
 
         // Validate ID format
         if (!isValidMongoId(id)) {
@@ -74,7 +73,7 @@ export async function GET(
 // Update a specific note by ID
 export async function PUT(
     req: NextRequest,
-    {params}: { params: Promise<{ id: string }> }
+    {params}: { params: { id: string } }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -85,7 +84,7 @@ export async function PUT(
             );
         }
 
-        const {id} = use(params);
+        const {id} = params;
 
         // Validate ID format
         if (!isValidMongoId(id)) {
@@ -177,7 +176,7 @@ export async function PUT(
 // Delete a specific note by ID
 export async function DELETE(
     req: NextRequest,
-    {params}: { params: Promise<{ id: string }> }
+    {params}: { params: { id: string } }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -188,7 +187,7 @@ export async function DELETE(
             );
         }
 
-        const {id} = use(params);
+        const {id} = params;
 
         // Validate ID format
         if (!isValidMongoId(id)) {

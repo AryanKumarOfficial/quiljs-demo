@@ -220,8 +220,7 @@ export const useFoldersStore = create<FoldersState>()(
         
         setFolderBeingDeleted: (folder: Folder | null) => 
           set({ folderBeingDeleted: folder }),
-        
-        getFolderCounts: async () => {
+          getFolderCounts: async () => {
           try {
             const response = await fetch('/api/notes/folder-counts');
             const result = await response.json();
@@ -233,12 +232,20 @@ export const useFoldersStore = create<FoldersState>()(
             const folderCounts = result.data as FolderCount[];
             
             // Update folder counts in the store
-            set(state => ({
-              folders: state.folders.map(folder => {
-                const count = folderCounts.find((fc: FolderCount) => fc._id === folder._id)?.count || 0;
-                return { ...folder, count };
-              })
-            }));
+            set(state => {
+              // Check if folders exists before mapping through it
+              if (!state.folders) {
+                console.warn('Folders array is undefined in getFolderCounts');
+                return state;
+              }
+              
+              return {
+                folders: state.folders.map(folder => {
+                  const count = folderCounts.find((fc: FolderCount) => fc._id === folder._id)?.count || 0;
+                  return { ...folder, count };
+                })
+              };
+            });
           } catch (err) {
             console.error('Error getting folder counts:', err);
           }

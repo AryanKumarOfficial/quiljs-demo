@@ -2,13 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { getSession, useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
 import AuthProvider from "@/components/AuthProvider";
 import { Container } from "@/components/ui/container";
 import NotesSidebar from "@/components/NotesSidebar";
 import FolderSidebar from "@/components/FolderSidebar";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { SidebarToggleContext } from "@/context/SidebarToggleContext";
 
 export default function NotesLayout({
@@ -23,7 +21,7 @@ export default function NotesLayout({
     const checkSession = async () => {
       const session = await getSession();
       if (!session) {
-        redirect("/login");
+        window.location.href = "/login";
       }
     };
     
@@ -72,10 +70,7 @@ export default function NotesLayout({
           
           <div className="flex-grow p-4 overflow-auto">
             {children}
-          </div>
-        </div>
-        
-        <Footer />
+          </div>        </div>
       </div>
     </SidebarToggleContext.Provider>
   );

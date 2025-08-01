@@ -4,11 +4,10 @@ import {notFound, redirect} from "next/navigation";
 import {authOptions} from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 import Note from "@/models/Note";
-import NotesEditor from "@/components/NotesEditor";
 import {Container} from "@/components/ui/container";
 import {Button} from "@/components/ui/button";
 import {FiArrowLeft} from "react-icons/fi";
-import {use} from "react";
+import ClientNotesEditor from "@/components/ClientNotesEditor";
 
 // Define a frontend-friendly note type without Mongoose methods
 export type FrontendNote = {
@@ -31,13 +30,15 @@ export type FrontendNote = {
 };
 
 interface NotePageProps {
-    params: Promise<{
+    params: {
         id: string;
-    }>;
+    };
 }
 
 export async function generateMetadata({params}: NotePageProps) {
-    const {id} = use(params);
+    // Await params to fix the "params should be awaited" error
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams.id;
     await connectToDatabase();
 
     try {
@@ -60,7 +61,9 @@ export async function generateMetadata({params}: NotePageProps) {
 }
 
 export default async function NotePage({params}: NotePageProps) {
-    const {id} = use(params);
+    // Await params to fix the "params should be awaited" error
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams.id;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -119,10 +122,8 @@ export default async function NotePage({params}: NotePageProps) {
                         <FiArrowLeft/> Back to Notes
                     </Button>
                 </Link>
-            </div>
-
-            <div className="h-[calc(100vh-180px)] rounded-lg shadow-sm border bg-white">
-                <NotesEditor note={note as any} isNew={false} readOnly={!isOwner}/>
+            </div>            <div className="h-[calc(100vh-180px)] rounded-lg shadow-sm border bg-white">
+                {note && <ClientNotesEditor note={note} isNew={false} readOnly={!isOwner}/>}
 
                 {!isOwner && (
                     <div
