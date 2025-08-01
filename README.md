@@ -522,11 +522,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact and Support
 
-- **Website**: [richtext.app](https://richtext.app)
-- **Email**: [support@richtext.app](mailto:support@richtext.app)
-- **Twitter**: [@richtextapp](https://twitter.com/richtextapp)
-- **Discord**: [Join our community](https://discord.gg/richtext)
-
+- **Website**: [quiljs-demo.vercel.app/](https://quiljs-demo.vercel.app/)
+- **Email**: [aryanak9163@gmail.com](mailto:aryanak9163@gmail.com)
+- **Twitter**: [@_aryankofficial](https://x.com/_aryankofficial)
 ---
 
 <div align="center">
