@@ -8,6 +8,7 @@ import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { FiArrowLeft } from "react-icons/fi";
 import ClientNotesEditor from "@/components/ClientNotesEditor";
+import type { Metadata, ResolvingMetadata } from 'next';
 
 // Define a frontend-friendly note type without Mongoose methods
 export type FrontendNote = {
@@ -29,35 +30,85 @@ export type FrontendNote = {
     createdAt: Date;
 };
 
+// Dynamic metadata generation based on the note data
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> },
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  // Await params to match Next.js 15 requirements
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
+  
+  // Get session
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return {
+      title: "Note Not Available",
+      description: "You need to log in to view this note",
+      robots: { index: false }
+    };
+  }
+  
+  try {
+    await connectToDatabase();
+    const note = await Note.findOne({ 
+      _id: id,
+      $or: [
+        { userId: session.user.id },
+        { isPublic: true },
+        { sharedWith: session.user.email }
+      ] 
+    });
+    
+    if (!note) {
+      return {
+        title: "Note Not Found",
+        description: "The requested note could not be found",
+        robots: { index: false }
+      };
+    }
+    
+    // Generate a clean description from the note content
+    let description = note.content
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .slice(0, 155); // Limit to 155 chars
+    
+    if (description.length === 155) {
+      description += '...';
+    }
+    
+    return {
+      title: note.title || "Untitled Note",
+      description: description || "No content",
+      robots: { 
+        index: note.isPublic, // Only index public notes
+        follow: true 
+      },
+      openGraph: note.isPublic ? {
+        title: note.title || "Untitled Note",
+        description: description,
+        type: 'article',
+        publishedTime: note.createdAt.toISOString(),
+        modifiedTime: note.updatedAt.toISOString(),
+        authors: ['RichText User'],
+        tags: note.tags,
+      } : undefined,
+    };
+  } catch (error) {
+    console.error("Error fetching note for metadata:", error);
+    return {
+      title: "Error Loading Note",
+      description: "There was a problem loading this note",
+      robots: { index: false }
+    };
+  }
+}
+
 interface NotePageProps {
     params: Promise<{
         id: string;
     }>;
-}
-
-export async function generateMetadata({ params }: NotePageProps) {
-    // Await params to fix the "params should be awaited" error
-    const resolvedParams = await Promise.resolve(params);
-    const id = resolvedParams.id;
-    await connectToDatabase();
-
-    try {
-        const note = await Note.findById(id);
-
-        if (!note) {
-            return {
-                title: "Note Not Found",
-            };
-        }
-
-        return {
-            title: `${note.title} | Cloud Notes`,
-        };
-    } catch (error) {
-        return {
-            title: "Note | Cloud Notes",
-        };
-    }
 }
 
 export default async function NotePage({ params }: NotePageProps) {

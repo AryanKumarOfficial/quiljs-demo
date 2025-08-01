@@ -86,6 +86,9 @@ importers:
       react-quill-new:
         specifier: ^3.4.6
         version: 3.4.6(quill-delta@5.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      schema-dts:
+        specifier: ^1.1.5
+        version: 1.1.5
       validator:
         specifier: ^13.15.15
         version: 13.15.15
@@ -1461,6 +1464,9 @@ packages:
 
   scheduler@0.26.0:
     resolution: {integrity: sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==}
+
+  schema-dts@1.1.5:
+    resolution: {integrity: sha512-RJr9EaCmsLzBX2NDiO5Z3ux2BVosNZN5jo0gWgsyKvxKIUL5R3swNvoorulAeL9kLB0iTSX7V6aokhla2m7xbg==}
 
   semver@7.7.1:
     resolution: {integrity: sha512-hlq8tAfn0m/61p4BVRcPzIGr6LKiMwo4VM6dGi6pt4qcRkmNzTcWq6eCEjEh+qXjkMDvPlOFFSGwQjoEa6gyMA==}
@@ -2940,6 +2946,8 @@ snapshots:
       vfile: 6.0.3
 
   scheduler@0.26.0: {}
+
+  schema-dts@1.1.5: {}
 
   semver@7.7.1:
     optional: true

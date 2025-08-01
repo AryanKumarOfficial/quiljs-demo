@@ -3,11 +3,30 @@ import { getServerSession } from "next-auth";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { authOptions } from "@/lib/auth";
+import type { Metadata } from 'next';
 
 // Import home components
 import { HeroSection } from "@/components/home/HeroSection";
 import ScrollIndicator from "@/components/home/ScrollIndicator";
 import { StatsSection } from "@/components/home/StatsSection";
+
+export const metadata: Metadata = {
+  title: "RichText - Modern Rich Text Note-Taking Application",
+  description: "Take notes beautifully, organize effortlessly, collaborate seamlessly with RichText - the modern note-taking application for individuals and teams.",
+  openGraph: {
+    title: "RichText - Modern Rich Text Note-Taking Application",
+    description: "Take notes beautifully, organize effortlessly, collaborate seamlessly.",
+    images: [
+      {
+        url: "https://richtext.app/home-og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "RichText App Home",
+      },
+    ],
+  },
+};
+
 import { FeaturesSection } from "@/components/home/FeaturesSection";
 import { TimelineSection } from "@/components/home/TimelineSection";
 import { TestimonialsSection } from "@/components/home/TestimonialsSection";
