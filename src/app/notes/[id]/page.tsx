@@ -1,12 +1,12 @@
-import {getServerSession} from "next-auth";
+import { getServerSession } from "next-auth";
 import Link from "next/link";
-import {notFound, redirect} from "next/navigation";
-import {authOptions} from "@/lib/auth";
+import { notFound, redirect } from "next/navigation";
+import { authOptions } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 import Note from "@/models/Note";
-import {Container} from "@/components/ui/container";
-import {Button} from "@/components/ui/button";
-import {FiArrowLeft} from "react-icons/fi";
+import { Container } from "@/components/ui/container";
+import { Button } from "@/components/ui/button";
+import { FiArrowLeft } from "react-icons/fi";
 import ClientNotesEditor from "@/components/ClientNotesEditor";
 
 // Define a frontend-friendly note type without Mongoose methods
@@ -30,12 +30,12 @@ export type FrontendNote = {
 };
 
 interface NotePageProps {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
-export async function generateMetadata({params}: NotePageProps) {
+export async function generateMetadata({ params }: NotePageProps) {
     // Await params to fix the "params should be awaited" error
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams.id;
@@ -60,7 +60,7 @@ export async function generateMetadata({params}: NotePageProps) {
     }
 }
 
-export default async function NotePage({params}: NotePageProps) {
+export default async function NotePage({ params }: NotePageProps) {
     // Await params to fix the "params should be awaited" error
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams.id;
@@ -76,9 +76,9 @@ export default async function NotePage({params}: NotePageProps) {
     const noteDoc = await Note.findOne({
         _id: id,
         $or: [
-            {userId: session.user.id},
-            {isPublic: true},
-            {sharedWith: session.user.email} // Use email for sharedWith
+            { userId: session.user.id },
+            { isPublic: true },
+            { sharedWith: session.user.email } // Use email for sharedWith
         ]
     }).lean();
 
@@ -107,7 +107,7 @@ export default async function NotePage({params}: NotePageProps) {
     };
 
     // Update last accessed time
-    await Note.findByIdAndUpdate(id, {lastAccessed: new Date()});
+    await Note.findByIdAndUpdate(id, { lastAccessed: new Date() });
 
     const isOwner = note.userId === session.user.id;
 
@@ -119,18 +119,18 @@ export default async function NotePage({params}: NotePageProps) {
                         variant="ghost"
                         className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
                     >
-                        <FiArrowLeft/> Back to Notes
+                        <FiArrowLeft /> Back to Notes
                     </Button>
                 </Link>
             </div>            <div className="h-[calc(100vh-180px)] rounded-lg shadow-sm border bg-white">
-                {note && <ClientNotesEditor note={note} isNew={false} readOnly={!isOwner}/>}
+                {note && <ClientNotesEditor note={note} isNew={false} readOnly={!isOwner} />}
 
                 {!isOwner && (
                     <div
                         className="mt-4 p-3 bg-blue-50 text-blue-800 rounded-md text-sm border border-blue-200 flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                             className="mr-2">
+                            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                            className="mr-2">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                             <circle cx="9" cy="7" r="4"></circle>
                             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
