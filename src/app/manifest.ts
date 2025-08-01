@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'RichText - Modern Rich Text Note-Taking Application',
-    short_name: 'RichText',
+    name: 'Doxie - Modern Rich Text Note-Taking Application',
+    short_name: 'Doxie',
     description: 'Take notes beautifully, organize effortlessly, collaborate seamlessly.',
     start_url: '/',
     display: 'standalone',
@@ -31,14 +31,13 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         src: '/screenshot-1.png',
         sizes: '1280x720',
-        type: 'image/png',
-        label: 'RichText Editor Interface',
+        type: 'image/png',        label: 'Doxie Editor Interface',
       },
       {
         src: '/screenshot-2.png',
         sizes: '1280x720',
         type: 'image/png',
-        label: 'RichText Notes Organization',
+        label: 'Doxie Notes Organization',
       },
     ],
   };

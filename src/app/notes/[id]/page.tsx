@@ -91,7 +91,7 @@ export async function generateMetadata(
         type: 'article',
         publishedTime: note.createdAt.toISOString(),
         modifiedTime: note.updatedAt.toISOString(),
-        authors: ['RichText User'],
+        authors: ['Doxie User'],
         tags: note.tags,
       } : undefined,
     };

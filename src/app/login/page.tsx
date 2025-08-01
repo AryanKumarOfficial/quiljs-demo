@@ -4,7 +4,7 @@ import LoginClient from "./login-client";
 
 export const metadata: Metadata = {
   title: "Log In",
-  description: "Log in to your RichText account to access your notes",
+  description: "Log in to your Doxie account to access your notes",
   robots: {
     index: false,
     follow: true,

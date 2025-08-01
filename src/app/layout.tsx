@@ -19,46 +19,41 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://richtext.app'),
-  title: {
-    default: "RichText - Modern Rich Text Note-Taking Application",
-    template: "%s | RichText App"
+  metadataBase: new URL('https://doxie.vercel.app'),
+  title: {    default: "Doxie - Modern Rich Text Note-Taking Application",
+    template: "%s | Doxie App"
   },
-  description: "Take notes beautifully, organize effortlessly, collaborate seamlessly with RichText - the modern note-taking application.",
+  description: "Take notes beautifully, organize effortlessly, collaborate seamlessly with Doxie - the modern note-taking application.",
   keywords: ["note taking", "rich text editor", "markdown editor", "collaborative notes", "document organization"],
-  authors: [{ name: "RichText Team", url: "https://richtext.app" }],
-  creator: "RichText Team",
-  publisher: "RichText App",
+  authors: [{ name: "Doxie Team", url: "https://doxie.vercel.app" }],  creator: "Doxie Team",
+  publisher: "Doxie App",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   referrer: "origin-when-cross-origin",
-  applicationName: "RichText",
+  applicationName: "Doxie",
   generator: "Next.js",
-  openGraph: {
-    title: "RichText - Modern Rich Text Note-Taking Application",
-    description: "Take notes beautifully, organize effortlessly, collaborate seamlessly with RichText.",
-    url: "https://richtext.app",
-    siteName: "RichText",
+  openGraph: {    title: "Doxie - Modern Rich Text Note-Taking Application",
+    description: "Take notes beautifully, organize effortlessly, collaborate seamlessly with Doxie.",
+    url: "https://doxie.vercel.app",
+    siteName: "Doxie",
     images: [
-      {
-        url: "https://richtext.app/og-image.png",
+      {        url: "https://doxie.vercel.app/og-image.png",
         width: 1200,
         height: 630,
-        alt: "RichText App",
+        alt: "Doxie App",
       },
     ],
     locale: "en_US",
     type: "website",
   },
   twitter: {
-    card: "summary_large_image",
-    title: "RichText - Modern Rich Text Note-Taking Application",
-    description: "Take notes beautifully, organize effortlessly, collaborate seamlessly with RichText.",
-    creator: "@richtextapp",
-    images: ["https://richtext.app/twitter-image.png"],
+    card: "summary_large_image",    title: "Doxie - Modern Rich Text Note-Taking Application",
+    description: "Take notes beautifully, organize effortlessly, collaborate seamlessly with Doxie.",
+    creator: "@doxieapp",
+    images: ["https://doxie.vercel.app/twitter-image.png"],
   },
   robots: {
     index: true,
@@ -86,11 +81,10 @@ export const metadata: Metadata = {
       },
     ],
   },
-  manifest: '/manifest.json',
-  alternates: {
-    canonical: 'https://richtext.app',
+  manifest: '/manifest.json',  alternates: {
+    canonical: 'https://doxie.vercel.app',
     languages: {
-      'en-US': 'https://richtext.app/en-US',
+      'en-US': 'https://doxie.vercel.app/en-US',
     },
   },
   category: 'productivity',

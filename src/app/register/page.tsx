@@ -4,7 +4,7 @@ import RegisterClient from "./register-client";
 
 export const metadata: Metadata = {
   title: "Create Account",
-  description: "Create a new RichText account to start taking notes and organizing your ideas",
+  description: "Create a new Doxie account to start taking notes and organizing your ideas",
   robots: {
     index: false,
     follow: true,

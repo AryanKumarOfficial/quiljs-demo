@@ -11,7 +11,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: "Create New Note",
-  description: "Create a new rich text or markdown note with RichText's intuitive editor",
+  description: "Create a new rich text or markdown note with Doxie's intuitive editor",
   robots: {
     index: false,
     follow: true,

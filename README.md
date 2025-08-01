@@ -1,7 +1,7 @@
-# RichText - Modern Rich Text Note-Taking Application
+# Doxie - Modern Rich Text Note-Taking Application
 
 <div align="center">
-  <img src="public/file.svg" alt="RichText Logo" width="120" height="120">
+  <img src="public/file.svg" alt="Doxie Logo" width="120" height="120">
   
   <p><strong>Take notes beautifully, organize effortlessly, collaborate seamlessly.</strong></p>
   
@@ -29,7 +29,7 @@
 
 ## 📋 Overview
 
-RichText is a powerful, intuitive note-taking application built with modern web technologies. It combines the simplicity of traditional note-taking with advanced features like rich text editing, real-time collaboration, and intelligent organization to help you capture and manage your thoughts effectively.
+Doxie is a powerful, intuitive note-taking application built with modern web technologies. It combines the simplicity of traditional note-taking with advanced features like rich text editing, real-time collaboration, and intelligent organization to help you capture and manage your thoughts effectively.
 
 ## ✨ Features
 
@@ -164,9 +164,8 @@ RichText is a powerful, intuitive note-taking application built with modern web 
 
 1. **Clone the repository**
 
-   ```bash
-   git clone https://github.com/yourusername/richtext.git
-   cd richtext
+   ```bash   git clone https://github.com/aryankumarofficial/quiljs-demo.git
+   cd doxie
    ```
 
 2. **Install dependencies**
@@ -215,7 +214,7 @@ RichText is a powerful, intuitive note-taking application built with modern web 
 
    If using local MongoDB:
    - Ensure MongoDB is installed and running
-   - Use `mongodb://localhost:27017/richtext` as your connection string
+   - Use `mongodb://localhost:27017/doxie` as your connection string
 
 5. **Run database migration (optional)**
 
@@ -239,10 +238,10 @@ For those familiar with Next.js projects, here's a quick setup:
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/richtext.git
+git clone https://github.com/aryankumarofficial/quiljs-demo.git
 
 # Install dependencies
-cd richtext
+cd doxie
 pnpm install
 
 # Create .env.local with required variables
@@ -256,16 +255,16 @@ pnpm dev
 
 ```bash
 # Build the Docker image
-docker build -t richtext .
+docker build -t doxie .
 
 # Run the container
-docker run -p 3000:3000 --env-file .env.local richtext
+docker run -p 3000:3000 --env-file .env.local doxie
 ```
 
 ## 📝 Usage Guide
 
 <p align="center">
-  <img src="https://via.placeholder.com/800x400?text=RichText+App+Screenshot" alt="RichText App Interface" width="80%" />
+  <img src="https://via.placeholder.com/800x400?text=Doxie+App+Screenshot" alt="Doxie App Interface" width="80%" />
 </p>
 
 ### Core Functionality
@@ -395,7 +394,7 @@ docker run -p 3000:3000 --env-file .env.local richtext
 
 ## 💯 Performance
 
-RichText is built with performance in mind:
+Doxie is built with performance in mind:
 
 - **Lighthouse Score**: 95+ on all categories
 - **Core Web Vitals**: Passing all metrics
@@ -409,7 +408,7 @@ RichText is built with performance in mind:
   <img src="https://via.placeholder.com/800x400?text=Application+Architecture+Diagram" alt="Application Architecture" width="80%" />
 </div>
 
-RichText is built with a clean, maintainable architecture:
+Doxie is built with a clean, maintainable architecture:
 
 ### Application Structure
 
@@ -468,7 +467,7 @@ We welcome contributions from the community! Please feel free to submit Pull Req
 1. **Fork the repository**
 2. **Clone your fork**
    ```bash
-   git clone https://github.com/your-username/richtext.git
+   git clone https://github.com/aryankumarofficial/quiljs-demo.git
    ```
 3. **Create a branch**
    ```bash
@@ -522,7 +521,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact and Support
 
-- **Website**: [quiljs-demo.vercel.app/](https://quiljs-demo.vercel.app/)
+- **Website**: [doxie.vercel.app](https://doxie.vercel.app/)
 - **Email**: [aryanak9163@gmail.com](mailto:aryanak9163@gmail.com)
 - **Twitter**: [@_aryankofficial](https://x.com/_aryankofficial)
 ---

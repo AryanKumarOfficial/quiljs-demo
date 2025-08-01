@@ -12,6 +12,6 @@ export default function robots(): MetadataRoute.Robots {
         '/register',
       ],
     },
-    sitemap: 'https://richtext.app/sitemap.xml',
+    sitemap: 'https://doxie.vercel.app/sitemap.xml',
   };
 }

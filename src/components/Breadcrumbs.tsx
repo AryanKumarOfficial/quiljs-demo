@@ -28,7 +28,7 @@ export default function Breadcrumbs({ items, className = "" }: BreadcrumbsProps)
       "@type": "ListItem",
       "position": index + 1,
       "name": item.name,
-      "item": `https://richtext.app${item.path}`,
+      "item": `https://doxie.vercel.app${item.path}`,
     })),
   };
   

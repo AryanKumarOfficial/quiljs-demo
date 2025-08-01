@@ -11,17 +11,16 @@ export default function JsonLd({ type, data = {} }: JsonLdProps) {
   if (type === "Organization") {
     jsonLd = {
       "@context": "https://schema.org",
-      "@type": "Organization",
-      name: "RichText",
-      url: "https://richtext.app",
-      logo: "https://richtext.app/logo.png",
+      "@type": "Organization",      name: "Doxie",
+      url: "https://doxie.vercel.app",
+      logo: "https://doxie.vercel.app/logo.png",
       sameAs: [
-        "https://twitter.com/richtextapp",
-        "https://github.com/richtextapp",
+        "https://twitter.com/doxieapp",
+        "https://github.com/doxieapp",
       ],
       contactPoint: {
         "@type": "ContactPoint",
-        email: "support@richtext.app",
+        email: "support@doxie.vercel.app",
         contactType: "customer service",
       },
       ...data,
@@ -30,7 +29,7 @@ export default function JsonLd({ type, data = {} }: JsonLdProps) {
     jsonLd = {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      name: "RichText",
+      name: "Doxie",
       applicationCategory: "ProductivityApplication",
       offers: {
         "@type": "Offer",
@@ -40,7 +39,7 @@ export default function JsonLd({ type, data = {} }: JsonLdProps) {
       operatingSystem: "Any",
       browserRequirements: "Requires JavaScript. Requires HTML5.",
       description:
-        "Take notes beautifully, organize effortlessly, collaborate seamlessly with RichText.",
+        "Take notes beautifully, organize effortlessly, collaborate seamlessly with Doxie.",
       ...data,
     };
   } else {

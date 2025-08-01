@@ -11,17 +11,17 @@ import ScrollIndicator from "@/components/home/ScrollIndicator";
 import { StatsSection } from "@/components/home/StatsSection";
 
 export const metadata: Metadata = {
-  title: "RichText - Modern Rich Text Note-Taking Application",
-  description: "Take notes beautifully, organize effortlessly, collaborate seamlessly with RichText - the modern note-taking application for individuals and teams.",
+  title: "Doxie - Modern Rich Text Note-Taking Application",
+  description: "Take notes beautifully, organize effortlessly, collaborate seamlessly with Doxie - the modern note-taking application for individuals and teams.",
   openGraph: {
-    title: "RichText - Modern Rich Text Note-Taking Application",
+    title: "Doxie - Modern Rich Text Note-Taking Application",
     description: "Take notes beautifully, organize effortlessly, collaborate seamlessly.",
     images: [
       {
-        url: "https://richtext.app/home-og-image.png",
+        url: "https://doxie.vercel.app/home-og-image.png",
         width: 1200,
         height: 630,
-        alt: "RichText App Home",
+        alt: "Doxie App Home",
       },
     ],
   },

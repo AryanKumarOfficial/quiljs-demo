@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://richtext.app';
+  const baseUrl = 'https://doxie.vercel.app';
   
   return [
     {
